@@ -19,8 +19,29 @@ local CROWN_SIZE_MULTIPLIER = 1.2
 local floor = math.floor
 local ceil = math.ceil
 local max = math.max
+local UnitIsUnit = UnitIsUnit
+local issecretvalue = _G.issecretvalue
 
 local RARITY_GEMS = ns.Theme and ns.Theme.RarityGems32
+
+-- UnitIsUnit can return a secret boolean under combat taint; never branch on it directly.
+local function SafeUnitMatches(left, right)
+    if not right then return false end
+    if not left then return true end
+    if left == right then return true end
+    if not UnitIsUnit then return false end
+
+    local ok, same = pcall(UnitIsUnit, left, right)
+    if not ok then return false end
+    if issecretvalue and issecretvalue(same) then return false end
+
+    local compareOK, matches = pcall(function()
+        return same == true
+    end)
+    return compareOK and matches or false
+end
+
+ns.SafeUnitMatches = SafeUnitMatches
 
 function Layouts:RegisterLayout(key, definition)
     if type(key) ~= "string" or key == "" or type(definition) ~= "table" then
@@ -331,14 +352,7 @@ end
 -- when you target yourself). A nil event unit means "all of them", which is how
 -- PORTRAITS_UPDATED arrives: it carries no unit at all.
 local function MatchesUnit(eventUnit, frameUnit)
-    if not frameUnit then return false end
-    if not eventUnit then return true end
-    if eventUnit == frameUnit then return true end
-    if UnitIsUnit then
-        local ok, same = pcall(UnitIsUnit, eventUnit, frameUnit)
-        return (ok and same) and true or false
-    end
-    return false
+    return SafeUnitMatches(eventUnit, frameUnit)
 end
 
 function Layouts:ApplyPortraitTexture(texture, unit, style, shell)

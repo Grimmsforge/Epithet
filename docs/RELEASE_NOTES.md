@@ -2,6 +2,13 @@
 
 ---
 
+## [1.3.2] - 2026-09-07
+
+### Added
+
+- **Simplified Chinese locale (zhCN)** — Full Simplified Chinese translation of the UI, settings, and What's New content.
+- **Localized title database overlay** — Simplified Chinese title names and source text now load through the locale-aware database overlay.
+
 ## [1.3.1] - 2026-08-30
 
 ### Added

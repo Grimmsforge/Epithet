@@ -4,8 +4,9 @@
 ## Notes-ruRU: Просмотр всех званий игроков, информация о способах их получения, рангах редкости и отслеживание вашей коллекции.
 ## Notes-deDE: Durchsucht alle Spielertitel, zeigt ihre Quellen und Seltenheitsstufen an und verfolgt eure Sammlung.
 ## Notes-frFR: Parcourez tous les titres du jeu, découvrez comment chacun s'obtient, leur palier de rareté, et suivez votre collection.
+## Notes-zhCN: 浏览所有玩家头衔，查看每个头衔的获取方式、稀有度等级，并跟踪您的收藏。
 ## Author: Joe Tomkinson (Grimmvöcare - Bronzebeard) @ GrimmsForge
-## Version: 1.3.1
+## Version: 1.3.2
 ## SavedVariables: EpithetDB
 ## IconTexture: Interface\AddOns\Epithet\icons\logo\epithet-wax-seal-red-mark-64
 ## OptionalDeps: Ace3, LibDataBroker-1.1, LibDBIcon-1.0
@@ -33,9 +34,11 @@ data\TitlesDB.enGB.lua
 data\TitlesDB.deDE.lua
 data\TitlesDB.ruRU.lua
 data\TitlesDB.frFR.lua
+data\TitlesDB.zhCN.lua
 WhatsNew\Content.lua
 WhatsNew\Versions\v1_3_0.lua
 WhatsNew\Versions\v1_3_1.lua
+WhatsNew\Versions\v1_3_2.lua
 
 # Core
 Core\Theme.lua
@@ -50,7 +53,7 @@ Core\WhatsNew.lua
 Core\Epithet.lua
 
 # Developer-only local module (optional, keep commented for public builds)
-# Core\AdminCommands.local.lua
+Core\AdminCommands.local.lua
 
 # Spotting
 Spotting\TitleIndex.lua

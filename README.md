@@ -69,7 +69,8 @@ Epithet/
 │   ├── Content.lua          # What's New content registry
 │   └── Versions/
 │       ├── v1_3_0.lua       # Content for a single version's popup
-│       └── v1_3_1.lua       # A version can optionally add its own vX_Y_Z/ art folder (banners, screenshots)
+│       ├── v1_3_1.lua       # Content for a single version's popup
+│       └── v1_3_2.lua       # A version can optionally add its own vX_Y_Z/ art folder (banners, screenshots)
 ├── data/
 │   ├── TitlesDB.enGB.lua    # Bundled static title database (enGB base / canonical)
 │   ├── TitlesDB.ruRU.lua.example  # Template for a localised prose overlay
@@ -150,6 +151,7 @@ Found a missing title, incorrect data, or an obtainability change? Open an issue
 
 | Template                                                                                                  | When to use                                                          |
 | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **[Bug Report](../../issues/new?labels=bug&template=bug-report.yml)**                                     | A bug is found in the addon                                          |
 | **[New Title](../../issues/new?labels=new-title&template=new-title.md)**                                  | A title exists in-game but is missing from the database              |
 | **[Title Correction](../../issues/new?labels=correction&template=title-correction.md)**                   | Any field on an existing title is wrong (rarity, source, type, etc.) |
 | **[Obtainability Change](../../issues/new?labels=obtainability-change&template=obtainability-change.md)** | A title was removed, re-added, or made seasonal in a patch           |
@@ -166,7 +168,9 @@ It's great to see people enjoying Epithet as an add-on to the extent that they g
 
 #### Named Locale Contributors
 
-- [Hubbotu - ZamestoTV](https://github.com/Hubbotu) - Contributing to the ruRU locale/lang files.
+- [Hubbotu - ZamestoTV](https://github.com/Hubbotu) - Contributing to the ruRU locale/lang files. 
+  - Big thanks for creating a [YouTube short on Epithet as well!](https://youtube.com/shorts/GHA6q1ljAx0?si=U8TiVp7YolphpXuE).
+- [AlexTend](https://github.com/alextend) - Contributing to the zhCN locale/lang files.
 
 ## License
 

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Epithet — Locale: zhCN (default)
+-- Epithet — Locale: Translator Alextend
 -- NOTE: WoW Lua 5.1 does NOT support \xNN hex escapes. Use decimal byte escapes
 --       (e.g. \226\128\148 = em dash) or plain ASCII.
 -- =============================================================================
@@ -541,10 +541,10 @@ L["SETTINGS_BUTTON_TOOLTIP"] = "打开 Epithet 设置"
 L["INFO_BUTTON_TOOLTIP"] = "关于 Epithet"
 
 -- Language names (shown in the picker, in the active language)
-L["LANGUAGE_ENGLISH"] = "English"
-L["LANGUAGE_RUSSIAN"] = "Русский"
-L["LANGUAGE_GERMAN"] = "Deutsch"
-L["LANGUAGE_FRENCH"] = "Français"
+L["LANGUAGE_ENGLISH"] = "英语"
+L["LANGUAGE_RUSSIAN"] = "俄语"
+L["LANGUAGE_GERMAN"] = "德语"
+L["LANGUAGE_FRENCH"] = "法语"
 L["LANGUAGE_SIMPLIFIED_CHINESE"] = "简体中文"
 
 -- Options: general section (main Epithet settings page)
