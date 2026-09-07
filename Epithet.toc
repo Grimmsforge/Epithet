@@ -52,7 +52,7 @@ Core\SocialLayer.lua
 Core\WhatsNew.lua
 Core\Epithet.lua
 
-# Developer-only local module (optional, keep commented for public builds)
+# Developer-only local module (optional; the build strips it from public packages)
 Core\AdminCommands.local.lua
 
 # Spotting

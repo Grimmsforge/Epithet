@@ -122,7 +122,14 @@ end
 -- path has failed we remember it and skip straight to the client font, so a
 -- missing bundled font errors at most once per session instead of per widget.
 local fontLoadFailed = {}
+local function SafeFontSize(size)
+    size = tonumber(size)
+    if not size or size <= 0 or size ~= size then return 12 end
+    return size
+end
+
 local function ApplyFont(fontLike, preferred, client, size, flags)
+    size = SafeFontSize(size)
     flags = flags or ""
     if preferred ~= client and not fontLoadFailed[preferred] then
         if pcall(fontLike.SetFont, fontLike, preferred, size, flags) then
