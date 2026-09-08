@@ -5,12 +5,10 @@
 -- =============================================================================
 local _, ns = ...
 
--- enGB is the base / default locale: the full English string set that every
--- other locale overlays onto (untranslated keys fall back here). GetLocale()
--- returns "enUS" for both US and GB clients, so this file also serves enUS.
---
--- The localisation machinery — the registry, the ns.L proxy, and the resolution
--- API — lives in LocaleManager.lua, which loads first. This file just registers
+-- Register the Simplified Chinese table into the locale registry. It is always loaded (no
+-- GetLocale guard) so the language picker can offer it on any client; the active locale is
+-- chosen by ns.ApplyLocale, and untranslated keys fall back to the English base
+-- automatically (see enGB.lua). LocaleManager.lua loads first; this file just registers
 -- its strings into ns.Locales.
 ns.Locales = ns.Locales or {}
 
