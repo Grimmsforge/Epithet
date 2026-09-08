@@ -8,11 +8,11 @@ ns.WhatsNewContent = ns.WhatsNewContent or { versions = {} }
 ns.WhatsNewContent.versions["1.3.2"] = {
     hasNew = true,
     title = {
-        enUS = "Hello!, 你好!",
-        deDE = "Hallo!, 你好!",
-        frFR = "Bonjour !, 你好!",
-        ruRU = "Привет!, 你好!",
-        zhCN = "你好!, 你好!",
+        enUS = "Hello!",
+        deDE = "Hallo!",
+        frFR = "Bonjour !",
+        ruRU = "Привет! ",
+        zhCN = "你好！",
     },
     body = {
         enUS = [[
