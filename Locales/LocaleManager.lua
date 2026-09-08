@@ -48,6 +48,7 @@ local LANGUAGE_NAME_KEYS = {
     ruRU = "LANGUAGE_RUSSIAN",
     deDE = "LANGUAGE_GERMAN",
     frFR = "LANGUAGE_FRENCH",
+    zhCN = "LANGUAGE_SIMPLIFIED_CHINESE",
 }
 
 -- Display name for a locale code. Prefers the active-language name (via ns.L),

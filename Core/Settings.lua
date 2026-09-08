@@ -6,6 +6,8 @@ local _, ns = ...
 local L = ns.L
 local T = ns.Theme
 local C_Timer = C_Timer
+local legacyOpenToCategory = _G.InterfaceOptionsFrame_OpenToCategory
+local legacyAddCategory = _G.InterfaceOptions_AddCategory
 
 local BlizzardSettings = _G.Settings
 
@@ -142,7 +144,8 @@ local function BuildScrollCanvas(viewport)
     -- Match the child width to the usable viewport width.
     local function SyncScrollWidth()
         local frameWidth = scrollFrame:GetWidth() or 0
-        local width = math.max(320, math.floor(frameWidth))
+        local scrollbarWidth = math.max(24, (scrollFrame.ScrollBar and scrollFrame.ScrollBar:GetWidth()) or 0)
+        local width = math.max(320, math.floor(frameWidth - scrollbarWidth))
         scrollContent:SetWidth(width)
     end
 
@@ -192,9 +195,9 @@ end
 
 -- Open a legacy Interface Options panel when the modern Settings API is unavailable.
 local function OpenLegacyPanel(panel)
-    if InterfaceOptionsFrame_OpenToCategory and panel then
-        InterfaceOptionsFrame_OpenToCategory(panel)
-        InterfaceOptionsFrame_OpenToCategory(panel)
+    if legacyOpenToCategory and panel then
+        legacyOpenToCategory(panel)
+        legacyOpenToCategory(panel)
         return true
     end
     return false
@@ -348,9 +351,9 @@ function Options:BuildLanguagePanel(parentCategory)
         if sub and sub.SetOnRefresh then
             sub:SetOnRefresh(RefreshLanguageDropdown)
         end
-    elseif InterfaceOptions_AddCategory then
+    elseif legacyAddCategory then
         panel.parent = "Epithet"
-        InterfaceOptions_AddCategory(panel)
+        legacyAddCategory(panel)
     end
 
     return panel
@@ -550,9 +553,9 @@ function Options:BuildAchievementsPanel(parentCategory)
         if sub and sub.SetOnRefresh then
             sub:SetOnRefresh(RefreshControls)
         end
-    elseif InterfaceOptions_AddCategory then
+    elseif legacyAddCategory then
         panel.parent = "Epithet"
-        InterfaceOptions_AddCategory(panel)
+        legacyAddCategory(panel)
     end
 
     return panel
@@ -1066,6 +1069,9 @@ function Options:BuildTitleSpottingPanel(parentCategory)
         function(value)
             local profile = GetProfile()
             if profile then profile.hideInCombat = value end
+        end,
+        function()
+            RefreshAll()
         end)
     hideInCombat:SetPoint("TOPLEFT", behaviourHeading, "BOTTOMLEFT", 0, -6)
 
@@ -1077,6 +1083,9 @@ function Options:BuildTitleSpottingPanel(parentCategory)
         function(value)
             local profile = GetProfile()
             if profile then profile.hideInGroup = value end
+        end,
+        function()
+            RefreshAll()
         end)
     hideInGroup:SetPoint("TOPLEFT", hideInCombat, "BOTTOMLEFT", 0, -8)
 
@@ -1436,9 +1445,9 @@ function Options:BuildTitleSpottingPanel(parentCategory)
                 QueuePanelRefreshSync()
             end)
         end
-    elseif InterfaceOptions_AddCategory then
+    elseif legacyAddCategory then
         panel.parent = "Epithet"
-        InterfaceOptions_AddCategory(panel)
+        legacyAddCategory(panel)
     end
 
     return panel
@@ -1519,8 +1528,8 @@ function Options:Init()
         self:BuildAchievementsPanel(category)
         self:BuildTitleSpottingPanel(category)
         self:BuildLanguagePanel(category)
-    elseif InterfaceOptions_AddCategory then
-        InterfaceOptions_AddCategory(panel)
+    elseif legacyAddCategory then
+        legacyAddCategory(panel)
         -- Register the legacy child panels under "Epithet".
         self:BuildAchievementsPanel(nil)
         self:BuildTitleSpottingPanel(nil)

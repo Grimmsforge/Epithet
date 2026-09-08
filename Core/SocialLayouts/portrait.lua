@@ -509,7 +509,6 @@ Layouts:RegisterLayout("portrait", {
                 frame.portraitModel:Hide()
                 self:ReleasePortraitModel(frame)
             end
-            LayoutPortraitRing(frame, m, false)
             if frame.portrait then
                 frame.portrait:Show()
                 frame.portrait:ClearAllPoints()

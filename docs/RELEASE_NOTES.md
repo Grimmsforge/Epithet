@@ -2,6 +2,24 @@
 
 ---
 
+## [1.3.2] - 2026-09-07
+
+### Added
+
+- **Simplified Chinese locale (zhCN)** — Full Simplified Chinese translation of the UI, settings, and What's New content.
+- **Localized title database overlay** — Simplified Chinese title names and source text now load through the locale-aware database overlay.
+
+### Changed
+
+- **Settings previews** — Title Spotting previews now refresh immediately when the relevant settings change.
+- **Chinese font selection** — zhCN clients use the client game font when appropriate, improving glyph rendering for the Chinese UI.
+- **Packaging** — The Grimmsforge logo is now included in packaged builds for the About modal, a regression in the last build removed it from the distribution packages.
+
+### Fixed
+
+- **Safer unit comparisons** — Protected or secret `UnitIsUnit` results no longer cause errors during combat. Self-target overlays, portrait updates, and title spotting capture now handle unit comparisons safely.
+- **Achievement source links** — Achievement links now fall back across client API variants and handle unavailable achievement IDs safely.
+
 ## [1.3.1] - 2026-08-30
 
 ### Added

@@ -3,6 +3,7 @@
 
 local _, ns = ...
 local L = ns.L
+local SafeUnitMatches = ns.SafeUnitMatches
 
 local Capture = {}
 ns.SpottingCapture = Capture
@@ -12,7 +13,6 @@ local GetTime = GetTime
 local UnitExists = UnitExists
 local UnitGUID = UnitGUID
 local UnitIsPlayer = UnitIsPlayer
-local UnitIsUnit = UnitIsUnit
 local UnitName = UnitName
 local UnitClass = UnitClass
 local UnitRace = UnitRace
@@ -128,7 +128,7 @@ function Capture:TryCapture(unit, fromRetry)
 
     if not UnitExists or not UnitExists(unit) then return end
     if not UnitIsPlayer or not UnitIsPlayer(unit) then return end
-    if UnitIsUnit and UnitIsUnit(unit, "player") then return end
+    if SafeUnitMatches and SafeUnitMatches(unit, "player") then return end
 
     local guid = UnitGUID and UnitGUID(unit)
     if not guid then return end

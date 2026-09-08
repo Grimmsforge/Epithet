@@ -1101,6 +1101,13 @@ function Detail:OnSourceLinkClick()
     if not record then return end
     local achievementID = tonumber(record.achievement_id)
     if not achievementID then return end
+    local achievementIsValid = true
+    if C_AchievementInfo and C_AchievementInfo.IsValidAchievement then
+        local ok, valid = pcall(C_AchievementInfo.IsValidAchievement, achievementID)
+        if ok and valid == false then
+            achievementIsValid = false
+        end
+    end
     if not AchievementFrame then
         if UIParentLoadAddOn then
             UIParentLoadAddOn("Blizzard_AchievementUI")
@@ -1111,10 +1118,11 @@ function Detail:OnSourceLinkClick()
 
     local opened = false
 
-    if OpenAchievementFrameToAchievement then
-        OpenAchievementFrameToAchievement(achievementID)
-        opened = true
-    else
+    if achievementIsValid and OpenAchievementFrameToAchievement then
+        opened = pcall(OpenAchievementFrameToAchievement, achievementID)
+    end
+
+    if not opened then
         if AchievementFrame then
             if not AchievementFrame:IsShown() then
                 if ShowUIPanel then
@@ -1133,10 +1141,12 @@ function Detail:OnSourceLinkClick()
 
         -- Some clients expose explicit selection APIs but not
         -- OpenAchievementFrameToAchievement.
-        if AchievementFrame_SelectAchievement then
-            AchievementFrame_SelectAchievement(achievementID)
-        elseif AchievementFrame and AchievementFrame.SelectAchievement then
-            AchievementFrame:SelectAchievement(achievementID)
+        if opened and achievementIsValid then
+            if AchievementFrame_SelectAchievement then
+                pcall(AchievementFrame_SelectAchievement, achievementID)
+            elseif AchievementFrame and AchievementFrame.SelectAchievement then
+                pcall(AchievementFrame.SelectAchievement, AchievementFrame, achievementID)
+            end
         end
     end
 

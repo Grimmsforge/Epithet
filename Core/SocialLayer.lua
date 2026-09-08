@@ -6,6 +6,7 @@ local _, ns = ...
 local L = ns.L
 local T = ns.Theme
 local Layouts = ns.Layouts
+local SafeUnitMatches = ns.SafeUnitMatches
 
 local UnitName = UnitName
 local UnitPVPName = UnitPVPName
@@ -13,7 +14,6 @@ local UnitFullName = UnitFullName
 local UnitGUID = UnitGUID
 local UnitExists = UnitExists
 local UnitIsPlayer = UnitIsPlayer
-local UnitIsUnit = UnitIsUnit
 local CreateFrame = CreateFrame
 local GetCursorPosition = GetCursorPosition
 local GetTime = GetTime
@@ -367,7 +367,7 @@ end
 
 function SocialLayer:GetRecordForUnit(unit)
     if not unit or not UnitExists or not UnitExists(unit) then return nil end
-    if UnitIsUnit and UnitIsUnit(unit, "player") then
+    if SafeUnitMatches and SafeUnitMatches(unit, "player") then
         local profile = GetProfile()
         if not (profile and profile.showSelfTargetNameplate == true) then
             return nil

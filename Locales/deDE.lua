@@ -541,6 +541,7 @@ L["LANGUAGE_ENGLISH"] = "Englisch"
 L["LANGUAGE_RUSSIAN"] = "Russisch"
 L["LANGUAGE_GERMAN"] = "Deutsch"
 L["LANGUAGE_FRENCH"] = "Französisch"
+L["LANGUAGE_SIMPLIFIED_CHINESE"] = "Vereinfachtes Chinesisch"
 
 -- Options: general section (main Epithet settings page)
 L["OPTIONS_GENERAL_SECTION"] = "Allgemein"

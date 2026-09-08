@@ -100,8 +100,21 @@ local function NeedsBundledFont()
     return code ~= nil and BUNDLED_FONT_LOCALES[code] == true
 end
 
-function Theme.SerifFontPath() return NeedsBundledFont() and BUNDLED_SERIF or CLIENT_SERIF end
-function Theme.SansFontPath()  return NeedsBundledFont() and BUNDLED_SANS  or CLIENT_SANS  end
+local function DefaultGameFontPath(fallback)
+    if ns.activeLocale == "zhCN" and GameFontNormal and GameFontNormal.GetFont then
+        local path = GameFontNormal:GetFont()
+        if path then return path end
+    end
+    return fallback
+end
+
+function Theme.SerifFontPath()
+    return NeedsBundledFont() and BUNDLED_SERIF or DefaultGameFontPath(CLIENT_SERIF)
+end
+
+function Theme.SansFontPath()
+    return NeedsBundledFont() and BUNDLED_SANS or DefaultGameFontPath(CLIENT_SANS)
+end
 
 -- Set `preferred` on a font instance; if it fails, fall back to the client font
 -- so text still draws. SetFont RAISES a Lua error for a missing/invalid asset
@@ -109,7 +122,14 @@ function Theme.SansFontPath()  return NeedsBundledFont() and BUNDLED_SANS  or CL
 -- path has failed we remember it and skip straight to the client font, so a
 -- missing bundled font errors at most once per session instead of per widget.
 local fontLoadFailed = {}
+local function SafeFontSize(size)
+    size = tonumber(size)
+    if not size or size <= 0 or size ~= size then return 12 end
+    return size
+end
+
 local function ApplyFont(fontLike, preferred, client, size, flags)
+    size = SafeFontSize(size)
     flags = flags or ""
     if preferred ~= client and not fontLoadFailed[preferred] then
         if pcall(fontLike.SetFont, fontLike, preferred, size, flags) then
