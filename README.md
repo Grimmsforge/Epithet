@@ -168,7 +168,7 @@ It's great to see people enjoying Epithet as an add-on to the extent that they g
 
 #### Named Locale Contributors
 
-- [Hubbotu - ZamestoTV](https://github.com/Hubbotu) - Contributing to the ruRU locale/lang files. 
+- [Hubbotu - ZamestoTV](https://github.com/Hubbotu) - Contributing to the ruRU locale/lang files.
   - Big thanks for creating a [YouTube short on Epithet as well!](https://youtube.com/shorts/GHA6q1ljAx0?si=U8TiVp7YolphpXuE).
 - [AlexTend](https://github.com/alextend) - Contributing to the zhCN locale/lang files.
 

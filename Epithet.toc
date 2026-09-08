@@ -53,7 +53,7 @@ Core\WhatsNew.lua
 Core\Epithet.lua
 
 # Developer-only local module (optional; the build strips it from public packages)
-Core\AdminCommands.local.lua
+# Core\AdminCommands.local.lua
 
 # Spotting
 Spotting\TitleIndex.lua
