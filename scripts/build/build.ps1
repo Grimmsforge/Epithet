@@ -98,7 +98,7 @@ function Build-Variant {
     Copy-Item (Join-Path $root "icons") -Destination (Join-Path $addonDir "icons") -Recurse
     Copy-Item (Join-Path $root "logo") -Destination (Join-Path $addonDir "logo") -Recurse
 
-    $aboutLogo = Join-Path $addonDir "logo\grimmsforge-logo.tga"
+    $aboutLogo = Join-Path (Join-Path $addonDir "logo") "grimmsforge-logo.tga"
     if (-not (Test-Path $aboutLogo)) {
         throw "Required About modal logo is missing from the package: $aboutLogo"
     }
