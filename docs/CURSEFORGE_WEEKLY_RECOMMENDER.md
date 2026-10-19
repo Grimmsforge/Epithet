@@ -5,9 +5,9 @@ This automation runs weekly and scans recent WoW add-ons on CurseForge, then sug
 ## Source strategy
 
 1. **Primary**: CurseForge API (`CURSEFORGE_API_KEY` required).
-2. **Fallback**: Curated feed/list scraping from `CURSEFORGE_FALLBACK_FEEDS`.
+2. **Fallback**: An explicitly configured feed/list source from `CURSEFORGE_FALLBACK_FEEDS`.
 
-The workflow will prefer API data whenever available, then fall back automatically if API access is unavailable.
+The workflow prefers API data whenever available, then uses the configured fallback if API access is unavailable. It does not use a built-in CurseForge page fallback because those pages are commonly blocked in hosted runners.
 
 ## Schedule and trigger
 
@@ -53,13 +53,15 @@ Confidence increases with amount and quality of evidence (API-backed evidence sc
 
 ## Configuration
 
-Set these in repository settings:
+Set these in repository settings before the scheduled workflow runs:
 
-- **Secret**: `CURSEFORGE_API_KEY`
+- **Required source**: `CURSEFORGE_API_KEY` secret, unless an accessible fallback is configured.
 - **Variable (optional)**: `CURSEFORGE_API_URL`
 - **Variable (optional)**: `CURSEFORGE_FALLBACK_FEEDS` (comma-separated URLs)
 
-If `CURSEFORGE_API_URL` is not set, the script uses its default WoW add-on search endpoint.
+If `CURSEFORGE_API_URL` is not set, the script uses its default WoW add-on search endpoint. If neither source is configured or reachable, the workflow fails instead of creating an empty recommendation issue.
+
+The repository secret must be added by a maintainer; it is never stored in the repository or printed in logs.
 
 ## Tuning guidance
 

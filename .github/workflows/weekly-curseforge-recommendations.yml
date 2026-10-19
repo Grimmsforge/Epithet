@@ -15,11 +15,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      - name: Validate recommendation source
+        shell: pwsh
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CURSEFORGE_FALLBACK_FEEDS: ${{ vars.CURSEFORGE_FALLBACK_FEEDS }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CURSEFORGE_API_KEY) -and [string]::IsNullOrWhiteSpace($env:CURSEFORGE_FALLBACK_FEEDS)) {
+            throw "No recommendation source configured. Add the CURSEFORGE_API_KEY repository secret, or set CURSEFORGE_FALLBACK_FEEDS to an accessible feed URL."
+          }
 
       - name: Restore recommendation history cache
         id: cache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .cache/curseforge-recommender/history.json
           key: curseforge-recommender-history-v1-${{ github.run_id }}
@@ -40,14 +50,14 @@ jobs:
             -MaxAddons 20
 
       - name: Upload recommendation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: weekly-curseforge-recommendations
           path: artifacts/curseforge-recommendations/
           if-no-files-found: error
 
       - name: Upsert rolling recommendation issue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -89,8 +99,8 @@ jobs:
             }
 
       - name: Save recommendation history cache
-        if: always()
-        uses: actions/cache/save@v4
+        if: always() && hashFiles('.cache/curseforge-recommender/history.json') != ''
+        uses: actions/cache/save@v6
         with:
           path: .cache/curseforge-recommender/history.json
           key: curseforge-recommender-history-v1-${{ github.run_id }}

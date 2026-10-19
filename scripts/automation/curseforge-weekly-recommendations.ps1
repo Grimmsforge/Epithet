@@ -32,6 +32,7 @@ function Invoke-JsonRequest {
         return Invoke-RestMethod -Method Get -Uri $Uri -Headers $Headers -TimeoutSec 30
     }
     catch {
+        Write-Warning "Request failed for $($Uri): $($_.Exception.Message)"
         return $null
     }
 }
@@ -39,6 +40,7 @@ function Invoke-JsonRequest {
 function Get-ApiAddons {
     $apiKey = $env:CURSEFORGE_API_KEY
     if ([string]::IsNullOrWhiteSpace($apiKey)) {
+        Write-Warning "CURSEFORGE_API_KEY is not configured; skipping CurseForge API."
         return @()
     }
 
@@ -49,6 +51,7 @@ function Get-ApiAddons {
 
     $response = Invoke-JsonRequest -Uri $apiUrl -Headers @{ "x-api-key" = $apiKey; "Accept" = "application/json" }
     if ($null -eq $response -or $null -eq $response.data) {
+        Write-Warning "CurseForge API returned no add-on data; verify CURSEFORGE_API_KEY and CURSEFORGE_API_URL."
         return @()
     }
 
@@ -82,7 +85,7 @@ function Get-ApiAddons {
 function Get-RssFallbackAddons {
     $feedCsv = $env:CURSEFORGE_FALLBACK_FEEDS
     if ([string]::IsNullOrWhiteSpace($feedCsv)) {
-        $feedCsv = "https://www.curseforge.com/wow/addons/rss,https://www.curseforge.com/wow/addons"
+        return @()
     }
 
     $feeds = $feedCsv.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
@@ -90,9 +93,10 @@ function Get-RssFallbackAddons {
 
     foreach ($feed in $feeds) {
         try {
-            $response = Invoke-WebRequest -Uri $feed -TimeoutSec 30
+            $response = Invoke-WebRequest -Uri $feed -Headers @{ "User-Agent" = "Grimmsforge-Epithet-Weekly-Recommender"; "Accept" = "application/rss+xml,application/atom+xml,text/xml,text/html" } -TimeoutSec 30
         }
         catch {
+            Write-Warning "Fallback feed failed: $($feed): $($_.Exception.Message)"
             continue
         }
 
@@ -195,6 +199,10 @@ if ($apiAddons.Count -eq 0) {
 }
 
 $allAddons = Normalize-Addons -Addons ($apiAddons + $fallbackAddons)
+if ($allAddons.Count -eq 0) {
+    throw "No CurseForge add-ons were retrieved. Configure the CURSEFORGE_API_KEY repository secret, or provide an accessible CURSEFORGE_FALLBACK_FEEDS repository variable."
+}
+
 $now = (Get-Date).ToUniversalTime()
 $windowStart = $now.AddDays(-1 * $WindowDays)
 
@@ -245,7 +253,8 @@ foreach ($addon in $scoredAddons) {
     $seenRaw = $history.seenAddons.$($addon.Slug)
     $seenDate = $null
     if ($seenRaw) { try { $seenDate = [datetime]$seenRaw } catch { } }
-    if ($null -eq $seenDate -or $seenDate -lt $windowStart) {
+    $updatedRecently = $null -eq $addon.UpdatedUtc -or $addon.UpdatedUtc -ge $windowStart
+    if ($updatedRecently -and ($null -eq $seenDate -or $seenDate -lt $windowStart)) {
         $newAddons += $addon
     }
 }
