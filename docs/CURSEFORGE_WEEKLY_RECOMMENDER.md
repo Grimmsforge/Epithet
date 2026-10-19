@@ -61,7 +61,7 @@ Set these in repository settings before the scheduled workflow runs:
 
 If `CURSEFORGE_API_URL` is not set, the script uses its default WoW add-on search endpoint. If neither source is configured or reachable, the workflow fails instead of creating an empty recommendation issue.
 
-The repository secret must be added by a maintainer; it is never stored in the repository or printed in logs.
+A `403 Forbidden` response means the secret value is not an active CurseForge API key. Create a key in the [CurseForge developer console](https://console.curseforge.com/), then replace the `CURSEFORGE_API_KEY` repository secret. Use the raw API key, not a client ID, GitHub token, or quoted value. The repository secret is never stored in the repository or printed in logs.
 
 ## Tuning guidance
 

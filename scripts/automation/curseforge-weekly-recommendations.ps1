@@ -43,15 +43,16 @@ function Get-ApiAddons {
         Write-Warning "CURSEFORGE_API_KEY is not configured; skipping CurseForge API."
         return @()
     }
+    $apiKey = $apiKey.Trim().Trim('"').Trim("'")
 
     $apiUrl = $env:CURSEFORGE_API_URL
     if ([string]::IsNullOrWhiteSpace($apiUrl)) {
-        $apiUrl = "https://api.curseforge.com/v1/mods/search?gameId=1&classId=4471&pageSize=60&sortField=2&sortOrder=desc"
+        $apiUrl = "https://api.curseforge.com/v1/mods/search?gameId=1&classId=4471&pageSize=50&sortField=2&sortOrder=desc"
     }
 
     $response = Invoke-JsonRequest -Uri $apiUrl -Headers @{ "x-api-key" = $apiKey; "Accept" = "application/json" }
     if ($null -eq $response -or $null -eq $response.data) {
-        Write-Warning "CurseForge API returned no add-on data; verify CURSEFORGE_API_KEY and CURSEFORGE_API_URL."
+        Write-Warning "CurseForge API returned no add-on data. A 403 response means the secret value is not an active CurseForge API key; create one at https://console.curseforge.com/ and replace CURSEFORGE_API_KEY."
         return @()
     }
 
