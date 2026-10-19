@@ -160,7 +160,7 @@ Found a missing title, incorrect data, or an obtainability change? Open an issue
 
 Please include patch notes, in-game screenshots, or official sources as evidence where possible.
 
-See [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md) for the full version history, and [docs/WHATS_NEW_FEATURE.md](docs/WHATS_NEW_FEATURE.md) for how the in-game What's New system works.
+See [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md) for the full version history, [docs/WHATS_NEW_FEATURE.md](docs/WHATS_NEW_FEATURE.md) for how the in-game What's New system works, and [docs/CURSEFORGE_WEEKLY_RECOMMENDER.md](docs/CURSEFORGE_WEEKLY_RECOMMENDER.md) for weekly feature recommendation automation.
 
 ### Pull Requests
 
