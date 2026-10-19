@@ -4,10 +4,11 @@ This automation runs weekly and scans recent WoW add-ons on CurseForge, then sug
 
 ## Source strategy
 
-1. **Primary**: CurseForge API (`CURSEFORGE_API_KEY` required).
-2. **Fallback**: An explicitly configured feed/list source from `CURSEFORGE_FALLBACK_FEEDS`.
+1. **Primary**: CurseForge API (`CURSEFORGE_API_KEY`, when available).
+2. **Optional fallback**: An explicitly configured feed/list source from `CURSEFORGE_FALLBACK_FEEDS`.
+3. **Built-in fallback**: GitHub's repository search API, authenticated with the workflow's built-in `GITHUB_TOKEN`, for recently updated repositories tagged `world-of-warcraft-addon`.
 
-The workflow prefers API data whenever available, then uses the configured fallback if API access is unavailable. It does not use a built-in CurseForge page fallback because those pages are commonly blocked in hosted runners.
+The workflow prefers CurseForge API data, then the configured feed, then GitHub add-on repositories. It does not use a built-in CurseForge page scraper because those pages are commonly blocked in hosted runners. GitHub fallback results are repository-based signals rather than a complete CurseForge catalog and link to the source repository as evidence.
 
 ## Schedule and trigger
 
@@ -55,11 +56,11 @@ Confidence increases with amount and quality of evidence (API-backed evidence sc
 
 Set these in repository settings before the scheduled workflow runs:
 
-- **Required source**: `CURSEFORGE_API_KEY` secret, unless an accessible fallback is configured.
+- **Secret (optional)**: `CURSEFORGE_API_KEY`
 - **Variable (optional)**: `CURSEFORGE_API_URL`
 - **Variable (optional)**: `CURSEFORGE_FALLBACK_FEEDS` (comma-separated URLs)
 
-If `CURSEFORGE_API_URL` is not set, the script uses its default WoW add-on search endpoint. If neither source is configured or reachable, the workflow fails instead of creating an empty recommendation issue.
+No secret is required for the built-in GitHub fallback; the workflow passes its read-only `GITHUB_TOKEN` automatically. If `CURSEFORGE_API_URL` is not set, the script uses its default WoW add-on search endpoint. The workflow fails only when all three sources return no data.
 
 A `403 Forbidden` response means the secret value is not an active CurseForge API key. Create a key in the [CurseForge developer console](https://console.curseforge.com/), then replace the `CURSEFORGE_API_KEY` repository secret. Use the raw API key, not a client ID, GitHub token, or quoted value. The repository secret is never stored in the repository or printed in logs.
 

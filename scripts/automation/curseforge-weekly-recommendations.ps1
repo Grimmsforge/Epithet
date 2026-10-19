@@ -161,6 +161,53 @@ function Get-RssFallbackAddons {
     return $items
 }
 
+function Get-GitHubAddons {
+    $token = $env:GITHUB_TOKEN
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        Write-Warning "GITHUB_TOKEN is not available; skipping GitHub add-on discovery."
+        return @()
+    }
+
+    $cutoff = (Get-Date).ToUniversalTime().AddDays(-1 * $WindowDays).ToString("yyyy-MM-dd")
+    $query = "topic:world-of-warcraft-addon fork:false archived:false pushed:>=$cutoff"
+    $encodedQuery = [Uri]::EscapeDataString($query)
+    $apiUrl = "https://api.github.com/search/repositories?q=$encodedQuery&sort=updated&order=desc&per_page=50"
+    $headers = @{
+        Accept                  = "application/vnd.github+json"
+        "X-GitHub-Api-Version" = "2022-11-28"
+        "User-Agent"            = "Grimmsforge-Epithet-Weekly-Recommender"
+        Authorization           = "Bearer $token"
+    }
+
+    $response = Invoke-JsonRequest -Uri $apiUrl -Headers $headers
+    if ($null -eq $response -or $null -eq $response.items) {
+        Write-Warning "GitHub add-on repository search returned no data."
+        return @()
+    }
+
+    $items = @()
+    foreach ($repo in $response.items) {
+        if ($repo.archived -or $repo.fork -or [string]::IsNullOrWhiteSpace($repo.full_name)) { continue }
+        $updated = $null
+        if ($repo.updated_at) {
+            try { $updated = [datetime]$repo.updated_at } catch { }
+        }
+        $topics = @("world-of-warcraft-addon")
+        if ($repo.topics) { $topics += @($repo.topics) }
+
+        $items += [pscustomobject]@{
+            Name       = [string]$repo.name
+            Summary    = if ($repo.description) { [string]$repo.description } else { "World of Warcraft add-on repository" }
+            Url        = [string]$repo.html_url
+            Slug       = [string]$repo.full_name
+            UpdatedUtc = $updated
+            Categories = ($topics | Select-Object -Unique)
+            Source     = "github-addon-repository"
+        }
+    }
+    return $items
+}
+
 function Normalize-Addons {
     param([object[]]$Addons)
     $map = @{}
@@ -195,13 +242,17 @@ if ($null -eq $history.seenSuggestions) { $history | Add-Member -NotePropertyNam
 
 $apiAddons = Get-ApiAddons
 $fallbackAddons = @()
+$githubAddons = @()
 if ($apiAddons.Count -eq 0) {
     $fallbackAddons = Get-RssFallbackAddons
+    if ($fallbackAddons.Count -eq 0) {
+        $githubAddons = Get-GitHubAddons
+    }
 }
 
-$allAddons = Normalize-Addons -Addons ($apiAddons + $fallbackAddons)
+$allAddons = Normalize-Addons -Addons ($apiAddons + $fallbackAddons + $githubAddons)
 if ($allAddons.Count -eq 0) {
-    throw "No CurseForge add-ons were retrieved. Configure the CURSEFORGE_API_KEY repository secret, or provide an accessible CURSEFORGE_FALLBACK_FEEDS repository variable."
+    throw "No add-ons were retrieved. Configure CURSEFORGE_API_KEY, CURSEFORGE_FALLBACK_FEEDS, or provide GITHUB_TOKEN for GitHub add-on discovery."
 }
 
 $now = (Get-Date).ToUniversalTime()
@@ -299,7 +350,7 @@ $reportPath = Join-Path $OutputDir "report.md"
 $issueBodyPath = Join-Path $OutputDir "issue-body.md"
 $dataPath = Join-Path $OutputDir "report.json"
 
-$sourceUsed = if ($apiAddons.Count -gt 0) { "CurseForge API" } elseif ($fallbackAddons.Count -gt 0) { "Curated fallback feeds/scrape" } else { "No data source reachable" }
+$sourceUsed = if ($apiAddons.Count -gt 0) { "CurseForge API" } elseif ($fallbackAddons.Count -gt 0) { "Configured fallback feed/scrape" } elseif ($githubAddons.Count -gt 0) { "GitHub WoW add-on repository search" } else { "No data source reachable" }
 $lines = [System.Collections.Generic.List[string]]::new()
 $lines.Add("# Weekly CurseForge Recommendations")
 $lines.Add("")

@@ -22,9 +22,10 @@ jobs:
         env:
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
           CURSEFORGE_FALLBACK_FEEDS: ${{ vars.CURSEFORGE_FALLBACK_FEEDS }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:CURSEFORGE_API_KEY) -and [string]::IsNullOrWhiteSpace($env:CURSEFORGE_FALLBACK_FEEDS)) {
-            throw "No recommendation source configured. Add the CURSEFORGE_API_KEY repository secret, or set CURSEFORGE_FALLBACK_FEEDS to an accessible feed URL."
+          if ([string]::IsNullOrWhiteSpace($env:CURSEFORGE_API_KEY) -and [string]::IsNullOrWhiteSpace($env:CURSEFORGE_FALLBACK_FEEDS) -and [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
+            throw "No recommendation source configured. Add CURSEFORGE_API_KEY, set CURSEFORGE_FALLBACK_FEEDS, or enable GitHub add-on discovery."
           }
 
       - name: Restore recommendation history cache
@@ -42,6 +43,7 @@ jobs:
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
           CURSEFORGE_API_URL: ${{ vars.CURSEFORGE_API_URL }}
           CURSEFORGE_FALLBACK_FEEDS: ${{ vars.CURSEFORGE_FALLBACK_FEEDS }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           ./scripts/automation/curseforge-weekly-recommendations.ps1 `
             -OutputDir ./artifacts/curseforge-recommendations `
