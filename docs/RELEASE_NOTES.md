@@ -2,6 +2,12 @@
 
 ---
 
+## [1.3.3] - 2026-11-02
+
+### Changed
+
+- **Game compatibility metadata** — Retail packaging now targets 12.1.5 (120105), and PTR packaging targets 12.1.7 (120107).
+
 ## [1.3.2] - 2026-09-07
 
 ### Added

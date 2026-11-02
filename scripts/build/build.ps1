@@ -16,8 +16,8 @@ $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $tocFile = Join-Path $root "Epithet.toc"
 
 # Interface versions
-$INTERFACE_LIVE = "120100"   # 12.1.0, live since 2026-08-11
-$INTERFACE_PTR  = "120105"   # 12.1.5 PTR
+$INTERFACE_LIVE = "120105"   # 12.1.5, current live
+$INTERFACE_PTR  = "120107"   # 12.1.7, current PTR
 
 # --- Version bump ---
 if ($Bump) {
