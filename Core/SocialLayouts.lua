@@ -12,7 +12,7 @@ Layouts.registry = Layouts.registry or {}
 Layouts.defaultKey = Layouts.defaultKey or "portrait"
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local CROWN_ICON = "Interface\\AddOns\\Epithet\\icons\\logo\\epithet-crown-mark-32"
+local CROWN_ICON = ns.Theme.tex.logoCrown
 local CROWN_Y_OFFSET = -7
 local CROWN_SIZE_MULTIPLIER = 1.2
 
@@ -22,7 +22,8 @@ local max = math.max
 local UnitIsUnit = UnitIsUnit
 local issecretvalue = _G.issecretvalue
 
-local RARITY_GEMS = ns.Theme and ns.Theme.RarityGems32
+local T = ns.Theme
+local RARITY_GEMS = T.RarityGems32
 
 -- UnitIsUnit can return a secret boolean under combat taint; never branch on it directly.
 local function SafeUnitMatches(left, right)
@@ -233,8 +234,8 @@ function Layouts:MakeHintPill(parent)
         edgeSize = 1,
         insets = { left = 1, right = 1, top = 1, bottom = 1 },
     })
-    frame:SetBackdropColor(0.06, 0.05, 0.03, 0.92)
-    frame:SetBackdropBorderColor(0.95, 0.84, 0.52, 0.95)
+    frame:SetBackdropColor(T.RGBA(T.col.pillBg, 0.92))
+    frame:SetBackdropBorderColor(T.RGBA(T.col.pillBorder, 0.95))
     frame:Hide()
     return frame
 end

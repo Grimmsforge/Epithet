@@ -199,16 +199,29 @@ function Capture:TryCapture(unit, fromRetry)
             local targetType = socialRecord.type
             local candidates = ns.TitleData.recordsByLowerText[targetText]
             if candidates then
+                -- One text can have a separate row per faction (WoW Forever's
+                -- Alliance and Horde "Sergeant"), so prefer the candidate that
+                -- matches the unit's faction and otherwise keep the first match.
+                local unitFaction = ns.SafeUnitFaction and ns.SafeUnitFaction(unit) or nil
+                local chosen = nil
                 for _, record in ipairs(candidates) do
                     if record and record.titleID and (not targetType or record.type == targetType) then
-                        titleID = record.titleID
-                        titleText = record.text
-                        titleType = record.type
-                        quality = record.q
-                        kind = record.kind
-                        cat = record.cat
-                        break
+                        if not chosen then
+                            chosen = record
+                        end
+                        if unitFaction and record.faction == unitFaction then
+                            chosen = record
+                            break
+                        end
                     end
+                end
+                if chosen then
+                    titleID = chosen.titleID
+                    titleText = chosen.text
+                    titleType = chosen.type
+                    quality = chosen.q
+                    kind = chosen.kind
+                    cat = chosen.cat
                 end
             end
         end

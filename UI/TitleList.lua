@@ -21,21 +21,21 @@ local metaScratch = {}
 local TitleList = {}
 ns.TitleList = TitleList
 
-local CHECK_ICON = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-check-32"
-local LOCK_ICON  = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-lock-32"
+local CHECK_ICON = T.tex.check
+local LOCK_ICON  = T.tex.lock
 
 -- Unobtainability overlay icons (16px, shown as badge on the row)
-local UNOBTAIN_SEALED    = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-unobtainable-sealed-16"
-local UNOBTAIN_HOURGLASS = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-unobtainable-hourglass-16"
+local UNOBTAIN_SEALED    = T.tex.unobtainable
+local UNOBTAIN_HOURGLASS = T.tex.timeSensitive
 
 -- Faction overlay icons (32px, downscaled to 20px for clean rendering on rarity gem)
-local FACTION_ALLIANCE = "Interface\\AddOns\\Epithet\\icons\\ui\\alliance-logo-white"
-local FACTION_HORDE    = "Interface\\AddOns\\Epithet\\icons\\ui\\horde-logo-white"
+local FACTION_ALLIANCE = T.tex.alliance
+local FACTION_HORDE    = T.tex.horde
 
 local RARITY_GEMS = T and T.RarityGems64
 
 -- Inline star texture escape (prepended to title text for favourites)
-local FAV_STAR = "|TInterface\\AddOns\\Epithet\\icons\\ui\\star:12:12|t "
+local FAV_STAR = T.InlineTex("star", 12) .. " "
 
 local ROW_HEIGHT    = 64
 local HEADER_HEIGHT = 28
@@ -68,10 +68,10 @@ function TitleList:InitHeader()
     -- Add sort icon to button
     if not header.SortButton.icon then
         local icon = header.SortButton:CreateTexture(nil, "ARTWORK")
-        icon:SetTexture("Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-sort-16")
+        icon:SetTexture(T.tex.sort)
         icon:SetSize(12, 12)
         icon:SetPoint("LEFT", header.SortButton, "LEFT", 4, 0)
-        icon:SetVertexColor(0.73, 0.57, 0.25)
+        icon:SetVertexColor(T.RGBA(T.col.goldDim))
         header.SortButton.icon = icon
     end
 
@@ -138,12 +138,22 @@ function TitleList:InitScrollBox()
     end)
 
     view:SetElementFactory(function(factory, elementData)
+        -- Template colours live in the theme (MainFrame.*_SKIN), painted once
+        -- per pooled frame before its first bind, as the XML used to.
         if elementData.isHeader then
             factory("EpithetGroupHeaderTemplate", function(frame, data)
+                if not frame.epithetSkinned then
+                    T.ApplySkin(frame, ns.MainFrame.GROUP_HEADER_SKIN)
+                    frame.epithetSkinned = true
+                end
                 TitleList:InitGroupHeader(frame, data)
             end)
         else
             factory("EpithetTitleRowTemplate", function(frame, data)
+                if not frame.epithetSkinned then
+                    T.ApplySkin(frame, ns.MainFrame.TITLE_ROW_SKIN)
+                    frame.epithetSkinned = true
+                end
                 TitleList:InitTitleRow(frame, data)
             end)
         end
@@ -229,7 +239,7 @@ function TitleList:InitTitleRow(row, record)
         -- placeholder, so localise it once here.
         row.ActiveChip:SetText(L["ACTIVE_TITLE"])
         local bg = row:CreateTexture(nil, "BACKGROUND")
-        bg:SetColorTexture(0.91, 0.78, 0.45, 1.0)
+        bg:SetColorTexture(T.RGBA(T.col.gold))
         bg:SetPoint("TOPLEFT", row.ActiveChip, "TOPLEFT", -7, 3)
         bg:SetPoint("BOTTOMRIGHT", row.ActiveChip, "BOTTOMRIGHT", 7, -3)
         bg:Hide()
@@ -237,14 +247,14 @@ function TitleList:InitTitleRow(row, record)
     end
     if not row.TypeTagBG then
         local bg = row:CreateTexture(nil, "BACKGROUND")
-        bg:SetColorTexture(0.0, 0.0, 0.0, 0.2)
+        bg:SetColorTexture(T.RGBA(T.col.black, 0.2))
         bg:SetPoint("TOPLEFT", row.TypeTag, "TOPLEFT", -6, 2)
         bg:SetPoint("BOTTOMRIGHT", row.TypeTag, "BOTTOMRIGHT", 4, -2)
         row.TypeTagBG = bg
     end
     if not row.TypeTagBorder then
         local border = row:CreateTexture(nil, "BACKGROUND")
-        border:SetColorTexture(0.72, 0.60, 0.36, 0.22)
+        border:SetColorTexture(T.RGBA(T.col.line))
         border:SetPoint("TOPLEFT", row.TypeTag, "TOPLEFT", -7, 3)
         border:SetPoint("BOTTOMRIGHT", row.TypeTag, "BOTTOMRIGHT", 5, -3)
         row.TypeTagBorder = border
@@ -257,7 +267,7 @@ function TitleList:InitTitleRow(row, record)
     -- Rarity gem (full row height, tinted by rarity colour)
     local gemTex = RARITY_GEMS[record.q or 1] or RARITY_GEMS[1]
     row.Pip:SetTexture(gemTex)
-    local pipColour = (tq and tq.pip) or (quality and quality.pip) or { r = 0.36, g = 0.33, b = 0.26 }
+    local pipColour = (tq and tq.pip) or (quality and quality.pip) or T.col.locked
     if record.earned then
         row.Pip:SetVertexColor(pipColour.r, pipColour.g, pipColour.b, 1.0)
     else
@@ -276,11 +286,11 @@ function TitleList:InitTitleRow(row, record)
     local faction = record.faction
     if faction == "Alliance" then
         row.FactionBadge:SetTexture(FACTION_ALLIANCE)
-        row.FactionBadge:SetVertexColor(0.91, 0.78, 0.45, 1.0)
+        row.FactionBadge:SetVertexColor(T.RGBA(T.col.alliance))
         row.FactionBadge:Show()
     elseif faction == "Horde" then
         row.FactionBadge:SetTexture(FACTION_HORDE)
-        row.FactionBadge:SetVertexColor(0.85, 0.20, 0.20, 1.0)
+        row.FactionBadge:SetVertexColor(T.RGBA(T.col.horde))
         row.FactionBadge:Show()
     else
         row.FactionBadge:Hide()
@@ -302,15 +312,15 @@ function TitleList:InitTitleRow(row, record)
         else
             row.TitleText:SetText(starPrefix .. title .. " " .. name)
         end
-        row.TitleText:SetTextColor(1, 1, 1)
+        row.TitleText:SetTextColor(T.RGBA(T.col.rowTitleActive))
     else
         local contextText = ns.TitleData:RenderTitleInContext(record, playerName)
         row.TitleText:SetText(starPrefix .. contextText)
         if record.earned then
-            local c = quality and quality.text or { r = 0.95, g = 0.93, b = 0.89 }
+            local c = quality and quality.text or T.quality[1].text
             row.TitleText:SetTextColor(c.r, c.g, c.b)
         else
-            row.TitleText:SetTextColor(0.50, 0.46, 0.36)
+            row.TitleText:SetTextColor(T.RGBA(T.col.rowTitleLocked))
         end
     end
 
@@ -359,14 +369,14 @@ function TitleList:InitTitleRow(row, record)
         if T then
             row.StateMark:SetVertexColor(T.col.gold.r, T.col.gold.g, T.col.gold.b)
         else
-            row.StateMark:SetVertexColor(0.91, 0.78, 0.45)
+            row.StateMark:SetVertexColor(T.RGBA(T.col.gold))
         end
     else
         row.StateMark:SetTexture(LOCK_ICON)
         if T then
             row.StateMark:SetVertexColor(T.col.locked.r, T.col.locked.g, T.col.locked.b)
         else
-            row.StateMark:SetVertexColor(0.36, 0.33, 0.26)
+            row.StateMark:SetVertexColor(T.RGBA(T.col.locked))
         end
     end
 
@@ -380,11 +390,11 @@ function TitleList:InitTitleRow(row, record)
     local obt = record.obtainable
     if obt == "no" then
         row.ObtainBadge:SetTexture(UNOBTAIN_SEALED)
-        row.ObtainBadge:SetVertexColor(0.85, 0.35, 0.30, 1.0)
+        row.ObtainBadge:SetVertexColor(T.RGBA(T.col.unobtainable))
         row.ObtainBadge:Show()
     elseif obt == "feat" then
         row.ObtainBadge:SetTexture(UNOBTAIN_HOURGLASS)
-        row.ObtainBadge:SetVertexColor(0.90, 0.70, 0.25, 1.0)
+        row.ObtainBadge:SetVertexColor(T.RGBA(T.col.timeSensitive))
         row.ObtainBadge:Show()
     else
         row.ObtainBadge:Hide()
@@ -393,12 +403,12 @@ function TitleList:InitTitleRow(row, record)
     -- Right column 2: Type tag pill (PREFIX / SUFFIX)
     if record.type == "prefix" then
         row.TypeTag:SetText(L["TYPE_TAG_PREFIX"])
-        row.TypeTag:SetTextColor(0.61, 0.55, 0.42)
+        row.TypeTag:SetTextColor(T.RGBA(T.col.muted))
         row.TypeTagBG:Show()
         row.TypeTagBorder:Show()
     elseif record.type == "suffix" then
         row.TypeTag:SetText(L["TYPE_TAG_SUFFIX"])
-        row.TypeTag:SetTextColor(0.61, 0.55, 0.42)
+        row.TypeTag:SetTextColor(T.RGBA(T.col.muted))
         row.TypeTagBG:Show()
         row.TypeTagBorder:Show()
     else

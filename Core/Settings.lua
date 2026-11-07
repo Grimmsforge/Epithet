@@ -621,7 +621,7 @@ function Options:BuildTitleSpottingPanel(parentCategory)
         if T and T.col and T.col.goldBright then
             enabled.text:SetTextColor(T.col.goldBright.r, T.col.goldBright.g, T.col.goldBright.b, 1)
         else
-            enabled.text:SetTextColor(1, 0.92, 0.72)
+            enabled.text:SetTextColor(T.RGBA(T.col.toggleOnText))
         end
     end
 
@@ -706,8 +706,8 @@ function Options:BuildTitleSpottingPanel(parentCategory)
         previewFrame:SetBackdropColor(T.col.bg0.r, T.col.bg0.g, T.col.bg0.b, 0.75)
         previewFrame:SetBackdropBorderColor(T.col.line.r, T.col.line.g, T.col.line.b, 0.7)
     else
-        previewFrame:SetBackdropColor(0.08, 0.06, 0.04, 0.75)
-        previewFrame:SetBackdropBorderColor(0.55, 0.46, 0.30, 0.7)
+        previewFrame:SetBackdropColor(T.RGBA(T.col.plateBg, 0.75))
+        previewFrame:SetBackdropBorderColor(T.RGBA(T.col.previewFrameBorder, 0.7))
     end
 
     -- Keep the preview plate globally named for in-game inspection.
@@ -724,8 +724,8 @@ function Options:BuildTitleSpottingPanel(parentCategory)
         previewPlate:SetBackdropColor(T.col.bg0.r, T.col.bg0.g, T.col.bg0.b, 0.9)
         previewPlate:SetBackdropBorderColor(T.col.goldDeep.r, T.col.goldDeep.g, T.col.goldDeep.b, 0.9)
     else
-        previewPlate:SetBackdropColor(0.08, 0.06, 0.04, 0.9)
-        previewPlate:SetBackdropBorderColor(0.72, 0.58, 0.26, 0.9)
+        previewPlate:SetBackdropColor(T.RGBA(T.col.plateBg, 0.9))
+        previewPlate:SetBackdropBorderColor(T.RGBA(T.col.plateBorder, 0.9))
     end
 
     previewPlate.leftCol = CreateFrame("Frame", nil, previewPlate)
@@ -744,7 +744,7 @@ function Options:BuildTitleSpottingPanel(parentCategory)
 
     previewPlate.portraitBG = previewPlate.portraitShell:CreateTexture(nil, "BACKGROUND")
     previewPlate.portraitBG:SetAllPoints(previewPlate.portraitShell)
-    previewPlate.portraitBG:SetColorTexture(0.05, 0.05, 0.05, 1.0)
+    previewPlate.portraitBG:SetColorTexture(T.RGBA(T.col.platePortraitBg))
 
     previewPlate.portrait = previewPlate.portraitShell:CreateTexture(nil, "ARTWORK")
     previewPlate.portrait:SetPoint("TOPLEFT", previewPlate.portraitShell, "TOPLEFT", 0, -1)
@@ -762,7 +762,7 @@ function Options:BuildTitleSpottingPanel(parentCategory)
     if T and T.col and T.col.line then
         previewPlate.portraitTopRule:SetColorTexture(T.col.line.r, T.col.line.g, T.col.line.b, 0.85)
     else
-        previewPlate.portraitTopRule:SetColorTexture(0.70, 0.58, 0.31, 0.75)
+        previewPlate.portraitTopRule:SetColorTexture(T.RGBA(T.col.plateRule, 0.75))
     end
     previewPlate.portraitTopRule:Hide()
 
@@ -771,7 +771,7 @@ function Options:BuildTitleSpottingPanel(parentCategory)
     if T and T.col and T.col.line then
         previewPlate.portraitBottomRule:SetColorTexture(T.col.line.r, T.col.line.g, T.col.line.b, 0.85)
     else
-        previewPlate.portraitBottomRule:SetColorTexture(0.70, 0.58, 0.31, 0.75)
+        previewPlate.portraitBottomRule:SetColorTexture(T.RGBA(T.col.plateRule, 0.75))
     end
     previewPlate.portraitBottomRule:Hide()
 
@@ -869,8 +869,8 @@ function Options:BuildTitleSpottingPanel(parentCategory)
         end
 
         previewPlate.gem:SetTexture(style.rarityGem)
-        previewPlate.gem:SetVertexColor(0.90, 0.70, 0.25, 1.0)
-        previewPlate.rarityText:SetTextColor(0.90, 0.70, 0.25)
+        previewPlate.gem:SetVertexColor(T.RGBA(T.col.previewAccent))
+        previewPlate.rarityText:SetTextColor(T.RGBA(T.col.previewAccent))
     end
 
     -- Checkpoints for the portrait event log (see DumpPortraitState): the
@@ -1142,41 +1142,13 @@ function Options:BuildTitleSpottingPanel(parentCategory)
     resetTarget:SetSize(300, 30)
     resetTarget:SetPoint("TOPLEFT", unlockTarget, "BOTTOMLEFT", 0, -8)
 
-    local resetBG = resetTarget:CreateTexture(nil, "BACKGROUND")
-    resetBG:SetAllPoints()
-    resetBG:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-    resetTarget.bg = resetBG
-
-    local rbTop = resetTarget:CreateTexture(nil, "BORDER")
-    rbTop:SetHeight(1)
-    rbTop:SetPoint("TOPLEFT")
-    rbTop:SetPoint("TOPRIGHT")
-    rbTop:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local rbBottom = resetTarget:CreateTexture(nil, "BORDER")
-    rbBottom:SetHeight(1)
-    rbBottom:SetPoint("BOTTOMLEFT")
-    rbBottom:SetPoint("BOTTOMRIGHT")
-    rbBottom:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local rbLeft = resetTarget:CreateTexture(nil, "BORDER")
-    rbLeft:SetWidth(1)
-    rbLeft:SetPoint("TOPLEFT")
-    rbLeft:SetPoint("BOTTOMLEFT")
-    rbLeft:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local rbRight = resetTarget:CreateTexture(nil, "BORDER")
-    rbRight:SetWidth(1)
-    rbRight:SetPoint("TOPRIGHT")
-    rbRight:SetPoint("BOTTOMRIGHT")
-    rbRight:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    resetTarget.borders = { rbTop, rbBottom, rbLeft, rbRight }
-
     local resetIcon = resetTarget:CreateTexture(nil, "ARTWORK")
-    resetIcon:SetTexture("Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-reset-16")
+    resetIcon:SetTexture(T.tex.reset)
     resetIcon:SetSize(14, 14)
     resetIcon:SetPoint("LEFT", resetTarget, "LEFT", 10, 0)
-    resetIcon:SetVertexColor(0.73, 0.57, 0.25, 1.0)
     resetTarget.icon = resetIcon
 
-    local resetText = (T and T.Sans and T.Sans(resetTarget, 12, T.col.gold)) or resetTarget:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local resetText = T.Sans(resetTarget, 12)
     resetText:SetDrawLayer("OVERLAY", 2)
     resetText:SetPoint("LEFT", resetIcon, "RIGHT", 8, 0)
     resetText:SetPoint("RIGHT", resetTarget, "RIGHT", -10, 0)
@@ -1184,26 +1156,11 @@ function Options:BuildTitleSpottingPanel(parentCategory)
     resetText:SetText(L["SOCIAL_TARGET_RESET"] or "Reset target nameplate position")
     resetTarget.text = resetText
 
-    resetTarget:SetScript("OnEnter", function(self_)
-        self_.bg:SetColorTexture(0.16, 0.12, 0.07, 1.0)
-        self_.icon:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-        if self_.text and self_.text.SetTextColor then
-            self_.text:SetTextColor(0.96, 0.89, 0.65)
-        end
-        for _, border in ipairs(self_.borders) do
-            border:SetColorTexture(0.91, 0.78, 0.45, 1.0)
-        end
-    end)
-    resetTarget:SetScript("OnLeave", function(self_)
-        self_.bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-        self_.icon:SetVertexColor(0.73, 0.57, 0.25, 1.0)
-        if self_.text and self_.text.SetTextColor then
-            self_.text:SetTextColor(0.91, 0.78, 0.45)
-        end
-        for _, border in ipairs(self_.borders) do
-            border:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-        end
-    end)
+    -- Shared bordered button; its icon brightens from goldDim to gold on hover.
+    T.SkinButton(resetTarget, T.ButtonVariant(T.ButtonLooks.standard, {
+        idle  = { icon = { "goldDim" } },
+        hover = { icon = { "gold" } },
+    }))
 
     resetTarget:SetScript("OnClick", function()
         local profile = GetProfile()

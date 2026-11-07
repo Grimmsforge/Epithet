@@ -4,6 +4,7 @@
 local _, ns = ...
 
 local Layouts = ns.Layouts
+local T = ns.Theme
 local floor = math.floor
 
 local PORTRAIT_MODE_2D = "2d"
@@ -135,13 +136,13 @@ Layouts:RegisterLayout("classic", {
                 frame:SetBackdropColor(ns.Theme.col.bg0.r, ns.Theme.col.bg0.g, ns.Theme.col.bg0.b, 0.86)
                 frame:SetBackdropBorderColor(ns.Theme.col.goldDeep.r, ns.Theme.col.goldDeep.g, ns.Theme.col.goldDeep.b, 0.9)
             else
-                frame:SetBackdropColor(0.08, 0.06, 0.04, 0.86)
-                frame:SetBackdropBorderColor(0.72, 0.58, 0.26, 0.9)
+                frame:SetBackdropColor(T.RGBA(T.col.plateBg, 0.86))
+                frame:SetBackdropBorderColor(T.RGBA(T.col.plateBorder, 0.9))
             end
         end
 
         if frame.portraitBG then
-            frame.portraitBG:SetColorTexture(0.05, 0.05, 0.05, 1.0)
+            frame.portraitBG:SetColorTexture(T.RGBA(T.col.platePortraitBg))
         end
 
         local portraitW = PortraitBox(m)

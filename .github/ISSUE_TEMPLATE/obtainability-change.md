@@ -7,7 +7,7 @@ labels: obtainability-change
 
 ## Title
 
-**Title text** (lowercase key in titles-db.json):
+**Title text** (lowercase key in `db/retail/titles-db.json`, or `db/forever/titles-db.json` for WoW Forever):
 
 
 ## Status Change

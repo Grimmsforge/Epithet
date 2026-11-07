@@ -59,20 +59,144 @@ local EPITHET_BACKDROP = {
     insets   = { left = 0, right = 0, top = 0, bottom = 0 },
 }
 
+-- ---------------------------------------------------------------------------
+-- Window skin
+-- ---------------------------------------------------------------------------
+-- Every colour of the XML-defined window (UI/MainFrame.xml carries layout
+-- only). { "path.from.EpithetMainFrame", kind, token, alpha } — see
+-- Theme.ApplySkin. "fill" is a solid colour texture; "tint" colours a texture
+-- file (the title-bar buttons use WHITE8X8 tinted).
+local MAIN_FRAME_SKIN = {
+    { "BorderTop",    "fill", "goldDeep", 0.85 },
+    { "BorderBottom", "fill", "goldDeep", 0.85 },
+    { "BorderLeft",   "fill", "goldDeep", 0.85 },
+    { "BorderRight",  "fill", "goldDeep", 0.85 },
+    { "InnerTop",     "fill", "line", 0.18 },
+    { "InnerBottom",  "fill", "line", 0.18 },
+    { "InnerLeft",    "fill", "line", 0.18 },
+    { "InnerRight",   "fill", "line", 0.18 },
+
+    { "TitleBar.BG",    "fill", "surface", 0.92 },
+    { "TitleBar.Title", "text", "gold" },
+    { "TitleBar.Sep",   "fill", "line", 0.30 },
+    { "TitleBar.CloseButton.Icon", "tint", "closeBtnIcon", 0.8 },
+
+    { "Header.PortraitRing", "fill", "goldDeep", 0.8 },
+    { "Header.PlayerName",   "text", "goldBright" },
+    { "Header.PlayerRealm",  "text", "muted" },
+    { "Header.EarnedLabel",  "text", "goldDim" },
+    { "Header.EarnedCount",  "text", "goldBright" },
+    { "Header.ProgressBar",              "bar",  "gold" },
+    { "Header.ProgressBar.BG",           "fill", "progressTrack", 0.95 },
+    { "Header.ProgressBar.Border",       "fill", "progressBorder", 0.45 },
+    { "Header.ProgressBar.BorderBottom", "fill", "progressBorder", 0.45 },
+
+    { "BottomBar.RarityLabel", "text", "gold" },
+}
+
+-- The window's own textures (UI/MainFrame.xml names Blizzard files only).
+-- { "path.from.EpithetMainFrame", Theme.tex name }.
+local MAIN_FRAME_TEXTURES = {
+    { "TitleBar.Logo",             "logoSeal" },
+    { "TitleBar.CloseButton.Icon", "close" },
+}
+
+-- Title-bar buttons: { token, alpha } per part and state. The close button
+-- keeps its own warm border; its icon starts at closeBtnIcon (MAIN_FRAME_SKIN)
+-- and returns to closeBtnIconIdle after a hover, as it always has.
+local TITLE_BUTTON_LOOKS = {
+    standard = {
+        idle  = { bg = { "titleBtnBg", 0.95 }, border = { "titleBtnBorder", 0.82 },
+                  icon = { "titleBtnIcon", 0.95 }, label = { "titleBtnLabel", 0.95 } },
+        hover = { bg = { "titleBtnBgHover", 0.98 }, border = { "titleBtnBorderHover", 1.0 },
+                  icon = { "titleBtnIconHover", 1.0 }, label = { "titleBtnLabelHover", 1.0 } },
+    },
+    close = {
+        idle  = { bg = { "titleBtnBg", 0.95 }, border = { "closeBtnBorder", 0.95 },
+                  icon = { "closeBtnIconIdle", 0.92 } },
+        hover = { bg = { "closeBtnBgHover", 0.98 }, border = { "closeBtnBorderHover", 1.0 },
+                  icon = { "closeBtnIconHover", 1.0 } },
+    },
+}
+local TITLE_BUTTON_BORDERS = { "BorderTop", "BorderBottom", "BorderLeft", "BorderRight" }
+
+local function PaintTitleButton(btn, look, skipIcon)
+    T.Paint(btn.BG, "tint", T.col[look.bg[1]], look.bg[2])
+    for _, key in ipairs(TITLE_BUTTON_BORDERS) do
+        T.Paint(btn[key], "tint", T.col[look.border[1]], look.border[2])
+    end
+    if btn.Icon and look.icon and not skipIcon then
+        T.Paint(btn.Icon, "tint", T.col[look.icon[1]], look.icon[2])
+    end
+    if btn.Label and look.label then
+        T.Paint(btn.Label, "text", T.col[look.label[1]], look.label[2])
+    end
+end
+
+local function SkinTitleButton(btn, looks, keepInitialIcon)
+    if not btn then return end
+    PaintTitleButton(btn, looks.idle, keepInitialIcon)
+    btn:HookScript("OnEnter", function(self_) PaintTitleButton(self_, looks.hover) end)
+    btn:HookScript("OnLeave", function(self_) PaintTitleButton(self_, looks.idle) end)
+end
+
+-- Skins for the XML row templates, applied once per pooled frame by TitleList.
+MainFrame.TITLE_ROW_SKIN = {
+    { "Highlight",       "fill", "gold", 0.06 },
+    { "Selected",        "fill", "gold", 0.06 },
+    { "SelBorderTop",    "fill", "goldDeep", 0.7 },
+    { "SelBorderBottom", "fill", "goldDeep", 0.7 },
+    { "SelBorderLeft",   "fill", "goldDeep", 0.7 },
+    { "SelBorderRight",  "fill", "goldDeep", 0.7 },
+    { "ActiveBar",       "fill", "gold", 1.0 },
+    { "TypeTag",         "text", "muted" },
+    { "ActiveChip",      "text", "ink" },
+    { "SourceText",      "text", "muted" },
+}
+MainFrame.GROUP_HEADER_SKIN = {
+    { "Label", "text", "goldDeep" },
+    { "Count", "text", "muted" },
+    { "Line",  "fill", "line", 0.22 },
+}
+
 function MainFrame:Init()
     if frame then return end
     frame = EpithetMainFrame
     if not frame then return end
 
+    -- Epithet's own textures (Theme.tex), then colours: exactly what the XML
+    -- used to set, so everything below layers on top as before.
+    for _, entry in ipairs(MAIN_FRAME_TEXTURES) do
+        local region = frame
+        for key in entry[1]:gmatch("[^%.]+") do region = region and region[key] end
+        if region then region:SetTexture(T.tex[entry[2]]) end
+    end
+    T.ApplySkin(frame, MAIN_FRAME_SKIN)
+    if frame.TitleBar then
+        SkinTitleButton(frame.TitleBar.SettingsButton, TITLE_BUTTON_LOOKS.standard)
+        SkinTitleButton(frame.TitleBar.InfoButton, TITLE_BUTTON_LOOKS.standard)
+        SkinTitleButton(frame.TitleBar.CloseButton, TITLE_BUTTON_LOOKS.close, true)
+    end
+
     -- Apply custom dark background via BackdropTemplate
     if frame.SetBackdrop then
         frame:SetBackdrop(EPITHET_BACKDROP)
     end
-    frame:SetBackdropColor(0.07, 0.05, 0.03, 0.97)
+    frame:SetBackdropColor(T.RGBA(T.col.bg0, 0.97))
 
     -- Set custom title bar text
     if frame.TitleBar and frame.TitleBar.Title then
-        frame.TitleBar.Title:SetText("|cffe8c767" .. L["BANNER_LEFT"] .. "|r |cffb0a284" .. L["BANNER_RIGHT"] .. "|r")
+        frame.TitleBar.Title:SetText(T.Wrap(T.col.brandGold, L["BANNER_LEFT"]) .. " " .. T.Wrap(T.col.brandSubtitle, L["BANNER_RIGHT"]))
+    end
+
+    -- The flavour's badge beside the seal (Theme.TitleBadge), when it has one.
+    local badge = T.TitleBadge
+    if badge and frame.TitleBar and frame.TitleBar.Logo and not frame.TitleBar.Badge then
+        local tex = frame.TitleBar:CreateTexture(nil, "ARTWORK")
+        tex:SetTexture(badge.texture)
+        tex:SetSize(badge.width, badge.height)
+        tex:SetPoint("LEFT", frame.TitleBar.Logo, "RIGHT", badge.x or 6, badge.y or 0)
+        frame.TitleBar.Badge = tex
     end
 
     -- Wire info button click
@@ -221,10 +345,19 @@ function MainFrame:InitHeader()
     local header = frame.Header
     if not header then return end
 
-    -- Portrait ring: subtle gold circle behind the portrait
-    if header.PortraitRing then
-        header.PortraitRing:SetTexture("Interface\\COMMON\\Indicator-Gray")
-        header.PortraitRing:SetVertexColor(0.49, 0.37, 0.15, 0.5)
+    -- Portrait ring, from the theme (Theme.HeaderPortraitRing): the compass
+    -- ring, drawn over the portrait's edge.
+    local ring = header.PortraitRing
+    if ring then
+        local spec = T.HeaderPortraitRing
+        ring:SetTexture(T.tex[spec.tex])
+        ring:SetSize(spec.size, spec.size)
+        if spec.tint then
+            ring:SetVertexColor(T.RGBA(T.col[spec.tint], spec.tintAlpha))
+        else
+            ring:SetVertexColor(1, 1, 1, 1)
+        end
+        ring:SetDrawLayer(spec.overPortrait and "ARTWORK" or "BACKGROUND", spec.overPortrait and 2 or 0)
     end
 
     -- Portrait: set to player model portrait
@@ -240,8 +373,8 @@ function MainFrame:InitHeader()
     header.ProgressBar:SetValue(0)
 
     -- Obtainable-only toggle (icon to the right of earned label)
-    local TOGGLE_OFF = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-toggle-off-32"
-    local TOGGLE_ON  = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-toggle-on-32"
+    local TOGGLE_OFF = T.tex.toggleOff
+    local TOGGLE_ON  = T.tex.toggleOn
 
     local rightReserve = HEADER_SPOTTED_COL_WIDTH + HEADER_SPOTTED_COL_GAP
 
@@ -267,7 +400,7 @@ function MainFrame:InitHeader()
     local icon = toggle:CreateTexture(nil, "ARTWORK")
     icon:SetAllPoints()
     icon:SetTexture(TOGGLE_OFF)
-    icon:SetVertexColor(0.73, 0.57, 0.25, 1.0)
+    icon:SetVertexColor(T.RGBA(T.col.goldDim))
     toggle.icon = icon
     toggle.TOGGLE_ON = TOGGLE_ON
     toggle.TOGGLE_OFF = TOGGLE_OFF
@@ -324,7 +457,10 @@ function MainFrame:RefreshHeader()
     end
 
     header.PlayerName:SetText(name)
-    header.PlayerRealm:SetText(realm)
+    -- A blank line rather than a hidden one: the progress bar hangs off it, so
+    -- the header keeps the same layout on every flavour.
+    local showRealm = not ns.Flavor or ns.Flavor.showRealm ~= false
+    header.PlayerRealm:SetText(showRealm and realm or " ")
 
     -- Update label to reflect mode
     header.EarnedLabel:SetText(obtOnly and L["TITLES_EARNED_OBTAINABLE"] or L["TITLES_EARNED"])
@@ -337,7 +473,7 @@ function MainFrame:RefreshHeader()
             T.Wrap(col.goldBright.hex, earned) .. "  / " .. total .. "   " .. T.Wrap(col.goldDim.hex, pct .. "%")
         )
     else
-        header.EarnedCount:SetText(format("|cffe8c873%d|r / %d    |cffb9923f%d%%|r", earned, total, pct))
+        header.EarnedCount:SetText(format("|cff%s%d|r / %d    |cff%s%d%%|r", T.col.gold.hex, earned, total, T.col.goldDim.hex, pct))
     end
 
     header.ProgressBar:SetMinMaxValues(0, total)
@@ -371,7 +507,7 @@ function MainFrame:InitBottomBar()
     if not bar.MetaSeparator then
         bar.MetaSeparator = bar:CreateTexture(nil, "ARTWORK")
     end
-    bar.MetaSeparator:SetColorTexture(0.72, 0.60, 0.36, 0.30)
+    bar.MetaSeparator:SetColorTexture(T.RGBA(T.col.line, 0.30))
     bar.MetaSeparator:SetWidth(1)
     bar.MetaSeparator:SetPoint("TOP", bar.RightMetaBlock, "TOPLEFT", -12, 0)
     bar.MetaSeparator:SetPoint("BOTTOM", bar.RightMetaBlock, "BOTTOMLEFT", -12, 0)
@@ -469,13 +605,13 @@ function MainFrame:InitBottomBar()
 
     -- Source kind icon legend (right of rarity pips)
     local SOURCE_LEGEND = {
-        { icon = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-achievement-16", label = L["LEGEND_ACHIEVEMENT"] },
-        { icon = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-quest-16",       label = L["LEGEND_QUEST"] },
-        { icon = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-reputation-16",  label = L["LEGEND_REPUTATION"] },
-        { icon = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-pvp-16",         label = L["LEGEND_PVP"] },
-        { icon = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-feat-16",        label = L["LEGEND_FEAT"] },
-        { icon = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-exploration-16", label = L["LEGEND_EXPLORATION"] },
-        { icon = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-raid-16",        label = L["LEGEND_RAID"] },
+        { icon = T.tex.catAchievementSmall, label = L["LEGEND_ACHIEVEMENT"] },
+        { icon = T.tex.catQuestSmall, label = L["LEGEND_QUEST"] },
+        { icon = T.tex.catReputationSmall, label = L["LEGEND_REPUTATION"] },
+        { icon = T.tex.catPvpSmall, label = L["LEGEND_PVP"] },
+        { icon = T.tex.catFeatSmall, label = L["LEGEND_FEAT"] },
+        { icon = T.tex.catExplorationSmall, label = L["LEGEND_EXPLORATION"] },
+        { icon = T.tex.catRaidSmall, label = L["LEGEND_RAID"] },
     }
 
     local sourceLabel = bar:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
@@ -487,8 +623,8 @@ function MainFrame:InitBottomBar()
     end
 
     local srcPrev = sourceLabel
-    local goldCol = T and T.col.gold or { r = 0.91, g = 0.78, b = 0.45 }
-    local parchCol = T and T.col.panel or { r = 0.11, g = 0.08, b = 0.04 }
+    local goldCol = T.col.gold
+    local parchCol = T.col.panel
 
     -- Shared hover popup (circular-ish with gold border, parchment bg, large icon)
     local popup = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
@@ -634,13 +770,13 @@ function MainFrame:SkinInsetPanel(panel)
     if not panel.EpithetBG then
         local bg = panel:CreateTexture(nil, "BACKGROUND", nil, -8)
         bg:SetAllPoints()
-        bg:SetColorTexture(0.05, 0.04, 0.02, 0.85)
+        bg:SetColorTexture(T.RGBA(T.col.ink, 0.85))
         panel.EpithetBG = bg
     end
 
     -- Subtle hairline border (1px, faint gold)
     if not panel.EpithetBorder then
-        local c = T and T.col.line or { r = 0.72, g = 0.60, b = 0.36, a = 0.22 }
+        local c = T.col.line
         local t = panel:CreateTexture(nil, "BORDER")
         t:SetPoint("TOPLEFT", -1, 1); t:SetPoint("TOPRIGHT", 1, 1); t:SetHeight(1)
         t:SetColorTexture(c.r, c.g, c.b, c.a or 0.22)
@@ -815,9 +951,9 @@ function MainFrame:ShowAbout()
         return
     end
 
-    local goldCol = T and T.col.gold or { r = 0.91, g = 0.78, b = 0.45 }
-    local parchCol = T and T.col.panel or { r = 0.07, g = 0.05, b = 0.03 }
-    local faintCol = T and T.col.faint or { r = 0.42, g = 0.38, b = 0.29 }
+    local goldCol = T.col.gold
+    local parchCol = T.col.panel
+    local faintCol = T.col.faint
 
     -- Overlay backdrop (dims the main frame)
     local overlay = CreateFrame("Frame", nil, frame, "BackdropTemplate")
@@ -826,7 +962,7 @@ function MainFrame:ShowAbout()
     overlay:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
     })
-    overlay:SetBackdropColor(0, 0, 0, 0.6)
+    overlay:SetBackdropColor(T.RGBA(T.col.black, 0.6))
     overlay:EnableMouse(true)
     overlay:SetScript("OnMouseDown", function() MainFrame:HideAbout() end)
 
@@ -848,12 +984,12 @@ function MainFrame:ShowAbout()
     local logo = modal:CreateTexture(nil, "ARTWORK")
     logo:SetSize(64, 64)
     logo:SetPoint("TOP", modal, "TOP", 0, -24)
-    logo:SetTexture("Interface\\AddOns\\Epithet\\logo\\grimmsforge-logo")
+    logo:SetTexture(T.tex.logoGrimmsforge)
 
     -- Title
     local title = modal:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOP", logo, "BOTTOM", 0, -12)
-    title:SetText("|cffe8c767Grimmsforge|r")
+    title:SetText(T.Wrap(T.col.brandGold, "Grimmsforge"))
 
     -- Description
     local desc = modal:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -862,11 +998,11 @@ function MainFrame:ShowAbout()
     desc:SetPoint("RIGHT", modal, "RIGHT", -24, 0)
     desc:SetJustifyH("CENTER")
     desc:SetSpacing(3)
-    desc:SetTextColor(0.78, 0.74, 0.66)
+    desc:SetTextColor(T.RGBA(T.col.bodyText))
     desc:SetText(
         L["ABOUT_CRAFTED"] .. "\n\n" ..
         L["ABOUT_TAGLINE"] .. "\n\n" ..
-        "|cffe8c767github.com/Grimmsforge|r"
+        T.Wrap(T.col.brandGold, "github.com/Grimmsforge")
     )
 
     -- Close button
@@ -874,37 +1010,18 @@ function MainFrame:ShowAbout()
     closeBtn:SetSize(80, 28)
     closeBtn:SetPoint("BOTTOM", modal, "BOTTOM", 0, 18)
 
-    local closeBG = closeBtn:CreateTexture(nil, "BACKGROUND")
-    closeBG:SetAllPoints()
-    closeBG:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-
-    local closeBorderT = closeBtn:CreateTexture(nil, "BORDER")
-    closeBorderT:SetHeight(1); closeBorderT:SetPoint("TOPLEFT"); closeBorderT:SetPoint("TOPRIGHT")
-    closeBorderT:SetColorTexture(goldCol.r, goldCol.g, goldCol.b, 0.5)
-    local closeBorderB = closeBtn:CreateTexture(nil, "BORDER")
-    closeBorderB:SetHeight(1); closeBorderB:SetPoint("BOTTOMLEFT"); closeBorderB:SetPoint("BOTTOMRIGHT")
-    closeBorderB:SetColorTexture(goldCol.r, goldCol.g, goldCol.b, 0.5)
-    local closeBorderL = closeBtn:CreateTexture(nil, "BORDER")
-    closeBorderL:SetWidth(1); closeBorderL:SetPoint("TOPLEFT"); closeBorderL:SetPoint("BOTTOMLEFT")
-    closeBorderL:SetColorTexture(goldCol.r, goldCol.g, goldCol.b, 0.5)
-    local closeBorderR = closeBtn:CreateTexture(nil, "BORDER")
-    closeBorderR:SetWidth(1); closeBorderR:SetPoint("TOPRIGHT"); closeBorderR:SetPoint("BOTTOMRIGHT")
-    closeBorderR:SetColorTexture(goldCol.r, goldCol.g, goldCol.b, 0.5)
-
     local closeText = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     closeText:SetPoint("CENTER")
     closeText:SetText(L["CLOSE"])
-    closeText:SetTextColor(goldCol.r, goldCol.g, goldCol.b)
+    closeBtn.text = closeText
 
+    -- Shared bordered button with a softer, constant edge; its label turns
+    -- textHover (not btnTextHover) on hover, as it always has.
+    T.SkinButton(closeBtn, T.ButtonVariant(T.ButtonLooks.standard, {
+        idle  = { border = { "btnBorderSoft" } },
+        hover = { border = false, text = { "textHover" } },
+    }))
     closeBtn:SetScript("OnClick", function() MainFrame:HideAbout() end)
-    closeBtn:SetScript("OnEnter", function()
-        closeBG:SetColorTexture(0.16, 0.12, 0.07, 1.0)
-        closeText:SetTextColor(1.0, 0.92, 0.6)
-    end)
-    closeBtn:SetScript("OnLeave", function()
-        closeBG:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-        closeText:SetTextColor(goldCol.r, goldCol.g, goldCol.b)
-    end)
 
     self.aboutFrame = overlay
 end

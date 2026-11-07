@@ -81,8 +81,8 @@ local function MakeHintPill(parent)
         edgeSize = 1,
         insets = { left = 1, right = 1, top = 1, bottom = 1 },
     })
-    frame:SetBackdropColor(0.06, 0.05, 0.03, 0.92)
-    frame:SetBackdropBorderColor(0.95, 0.84, 0.52, 0.95)
+    frame:SetBackdropColor(T.RGBA(T.col.pillBg, 0.92))
+    frame:SetBackdropBorderColor(T.RGBA(T.col.pillBorder, 0.95))
     frame:Hide()
     return frame
 end
@@ -375,7 +375,7 @@ function SocialLayer:GetRecordForUnit(unit)
     end
     -- Titles are a player-only concept. Without this, an NPC/critter/pet whose
     -- name happens to split on whitespace (e.g. "Light-Infused Broom") gets its
-    -- trailing word misread as a suffix title by ParseDisplay below.
+    -- trailing word misread as a suffix title when the displayed name is read below.
     if not UnitIsPlayer or not UnitIsPlayer(unit) then return nil end
     local displayName = UnitPVPName and UnitPVPName(unit) or nil
     local targetFrameText = nil
@@ -392,48 +392,20 @@ function SocialLayer:GetRecordForUnit(unit)
     local baseName = StripRealm(fullName or unitName or displayName)
     if not baseName or baseName == "" then return nil end
 
-    local escapedBase = baseName:gsub("(%W)", "%%%1")
-    local titleText = nil
-    local titleType = nil
-
-    local function ParseDisplay(candidate)
-        if not candidate then return nil, nil end
-
-        if candidate:find("^" .. escapedBase) then
-            local suffix = candidate:sub(#baseName + 1)
-            -- Handle cross-realm display names that include "-Realm" right
-            -- after the character name before any title text.
-            suffix = suffix:gsub("^%-[^,%s]+", "")
-            if suffix:match("^,%s+") then
-                return "suffix", suffix:gsub("^,%s+", "")
-            end
-            if suffix:match("^%s+") then
-                return "suffix", suffix:gsub("^%s+", "")
-            end
-        end
-
-        local prefix = candidate:match("^(.-)%s+" .. escapedBase .. "%-?[^%s]*$")
-        if prefix and prefix:match("%S") then
-            return "prefix", prefix:gsub("%s+$", "")
-        end
-
-        return nil, nil
-    end
-
     local candidates = { displayName }
     if targetFrameText and targetFrameText ~= "" then
         candidates[#candidates + 1] = targetFrameText
     end
 
-    for i = 1, #candidates do
-        titleType, titleText = ParseDisplay(candidates[i])
-        if titleText and titleText ~= "" then
-            break
-        end
+    -- Only a real title (this client's catalogue or the DB) counts, so a WoW
+    -- Forever surname is never read as one; see TitleIndex:ReadTitle.
+    local titleType, titleText, matchedID = nil, nil, nil
+    if ns.TitleIndex and ns.TitleIndex.ReadTitle then
+        titleType, titleText, matchedID = ns.TitleIndex:ReadTitle(candidates, baseName)
     end
 
     if not titleText or titleText == "" then
-        -- No parseable title found: suppress the social frame entirely.
+        -- No title shown: suppress the social frame entirely.
         return nil
     end
 
@@ -447,10 +419,17 @@ function SocialLayer:GetRecordForUnit(unit)
         -- titleID resolution: TitleIndex derives its fragment map from THIS
         -- SAME client's own GetTitleName catalogue, so it works regardless of
         -- client locale.
-        local resolvedID = ns.TitleIndex and ns.TitleIndex:Resolve(unit)
+        local resolvedID = matchedID or (ns.TitleIndex and ns.TitleIndex:Resolve(unit))
         if resolvedID and ns.EpithetData and ns.EpithetData.titlesByID then
             static = ns.EpithetData.titlesByID[resolvedID]
         end
+    end
+
+    -- Text alone cannot tell faction variants of one title apart (WoW Forever's
+    -- Alliance "Sergeant" 10 and Horde "Sergeant" 23), so let the unit's faction
+    -- pick. A no-op for any title the data does not split by faction.
+    if static and ns.PickFactionVariant then
+        static = ns.PickFactionVariant(static, ns.SafeUnitFaction and ns.SafeUnitFaction(unit))
     end
 
     if static then
@@ -460,7 +439,7 @@ function SocialLayer:GetRecordForUnit(unit)
             titleID = static.titleID,
             -- Preserve in-game casing from the visible nameplate when possible.
             titleText = titleText or static.text,
-            -- ParseDisplay read the affix off the rendered name, i.e. where the
+            -- ReadTitle read the affix off the rendered name, i.e. where the
             -- game itself put it for THIS player — more reliable than the
             -- text-keyed DB when one title text spans two IDs of differing type.
             type = titleType or static.type,
@@ -547,8 +526,8 @@ function SocialLayer:EnsureTargetFrame()
         frame:SetBackdropColor(T.col.bg0.r, T.col.bg0.g, T.col.bg0.b, 0.86)
         frame:SetBackdropBorderColor(T.col.goldDeep.r, T.col.goldDeep.g, T.col.goldDeep.b, 0.9)
     else
-        frame:SetBackdropColor(0.08, 0.06, 0.04, 0.86)
-        frame:SetBackdropBorderColor(0.72, 0.58, 0.26, 0.9)
+        frame:SetBackdropColor(T.RGBA(T.col.plateBg, 0.86))
+        frame:SetBackdropBorderColor(T.RGBA(T.col.plateBorder, 0.9))
     end
     if TargetFrameName then
         frame:SetPoint("TOP", TargetFrameName, "BOTTOM", 0, -2)
@@ -577,7 +556,7 @@ function SocialLayer:EnsureTargetFrame()
 
     frame.portraitBG = frame.portraitShell:CreateTexture(nil, "BACKGROUND")
     frame.portraitBG:SetAllPoints(frame.portraitShell)
-    frame.portraitBG:SetColorTexture(0.05, 0.05, 0.05, 1.0)
+    frame.portraitBG:SetColorTexture(T.RGBA(T.col.platePortraitBg))
 
     frame.portrait = frame.portraitShell:CreateTexture(nil, "ARTWORK")
     frame.portrait:SetPoint("TOPLEFT", frame.portraitShell, "TOPLEFT", 0, -1)
@@ -588,7 +567,7 @@ function SocialLayer:EnsureTargetFrame()
     if T and T.col and T.col.line then
         frame.portraitTopRule:SetColorTexture(T.col.line.r, T.col.line.g, T.col.line.b, 0.85)
     else
-        frame.portraitTopRule:SetColorTexture(0.70, 0.58, 0.31, 0.75)
+        frame.portraitTopRule:SetColorTexture(T.RGBA(T.col.plateRule, 0.75))
     end
     frame.portraitTopRule:Hide()
 
@@ -597,7 +576,7 @@ function SocialLayer:EnsureTargetFrame()
     if T and T.col and T.col.line then
         frame.portraitBottomRule:SetColorTexture(T.col.line.r, T.col.line.g, T.col.line.b, 0.85)
     else
-        frame.portraitBottomRule:SetColorTexture(0.70, 0.58, 0.31, 0.75)
+        frame.portraitBottomRule:SetColorTexture(T.RGBA(T.col.plateRule, 0.75))
     end
     frame.portraitBottomRule:Hide()
 
@@ -611,7 +590,7 @@ function SocialLayer:EnsureTargetFrame()
     crownFrame:SetPoint("BOTTOM", frame.portraitShell, "TOP", 0, crownYOffset)
     local crown = crownFrame:CreateTexture(nil, "OVERLAY")
     crown:SetAllPoints(crownFrame)
-    local crownIcon = Layouts and Layouts.GetCrownIcon and Layouts:GetCrownIcon() or "Interface\\AddOns\\Epithet\\icons\\logo\\epithet-crown-mark-32"
+    local crownIcon = Layouts and Layouts.GetCrownIcon and Layouts:GetCrownIcon() or T.tex.logoCrown
     crown:SetTexture(crownIcon)
     frame.crownFrame = crownFrame
     frame.crown = crown
@@ -637,7 +616,7 @@ function SocialLayer:EnsureTargetFrame()
     else
         frame.titleText = frame.titleRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         frame.rarityText = frame.rarityRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        frame.rarityText:SetTextColor(0.75, 0.75, 0.75)
+        frame.rarityText:SetTextColor(T.RGBA(T.col.plateRarityText))
     end
 
     frame.titleText:SetAllPoints(frame.titleRow)
@@ -671,8 +650,8 @@ function SocialLayer:EnsureTargetFrame()
     else
         frame.editHintTopText = frame.editHintTop:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         frame.editHintBottomText = frame.editHintBottom:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        frame.editHintTopText:SetTextColor(1, 0.9, 0.4)
-        frame.editHintBottomText:SetTextColor(1, 0.9, 0.4)
+        frame.editHintTopText:SetTextColor(T.RGBA(T.col.plateEditHighlight))
+        frame.editHintBottomText:SetTextColor(T.RGBA(T.col.plateEditHighlight))
     end
 
     frame.editHintTopText:SetPoint("CENTER", frame.editHintTop, "CENTER", 0, 0)
@@ -815,11 +794,11 @@ function SocialLayer:ApplyTargetDragState(frame, profile)
         end
     else
         if frame.isUnlocked then
-            frame:SetBackdropColor(0.14, 0.1, 0.06, 0.95)
-            frame:SetBackdropBorderColor(1, 0.9, 0.4, 1)
+            frame:SetBackdropColor(T.RGBA(T.col.plateEditBg, 0.95))
+            frame:SetBackdropBorderColor(T.RGBA(T.col.plateEditHighlight))
         else
-            frame:SetBackdropColor(0.08, 0.06, 0.04, 0.86)
-            frame:SetBackdropBorderColor(0.72, 0.58, 0.26, 0.9)
+            frame:SetBackdropColor(T.RGBA(T.col.plateBg, 0.86))
+            frame:SetBackdropBorderColor(T.RGBA(T.col.plateBorder, 0.9))
         end
     end
 

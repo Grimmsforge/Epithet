@@ -1,0 +1,12 @@
+{
+  "name": "epithet-tests",
+  "private": true,
+  "description": "Epithet's tests, run in a Lua VM (fengari). Not part of the addon package.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "node run-all.js"
+  },
+  "dependencies": {
+    "fengari": "0.1.4"
+  }
+}

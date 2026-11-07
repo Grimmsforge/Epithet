@@ -15,13 +15,13 @@ local wipe = wipe
 local Sidebar = {}
 ns.Sidebar = Sidebar
 
-local col = T and T.col or {}
-local GOLD        = col.gold     or { r = 0.91, g = 0.78, b = 0.45 }
-local GOLD_DIM    = col.goldDim  or { r = 0.73, g = 0.57, b = 0.25 }
-local DARK_TEXT   = col.ink      or { r = 0.08, g = 0.06, b = 0.03 }
-local COUNT_COL   = col.faint    or { r = 0.55, g = 0.50, b = 0.40 }
-local INSET_COL   = col.inset    or { r = 0.05, g = 0.04, b = 0.02 }
-local MUTED       = col.muted    or { r = 0.61, g = 0.55, b = 0.42 }
+local col = T.col
+local GOLD        = col.gold
+local GOLD_DIM    = col.goldDim
+local DARK_TEXT   = col.ink
+local COUNT_COL   = col.faint
+local INSET_COL   = col.inset
+local MUTED       = col.muted
 
 local PAD_X = 14
 
@@ -237,6 +237,22 @@ function Sidebar:Init(sidebar)
     self.expScrollBox = scrollBox
     self.expChild = child
 
+    -- Facet rows come from the loaded data (Filters:GetBuckets), so each flavour
+    -- lists only the expansions, categories, kinds and factions it ships. A
+    -- saved filter on a bucket that isn't offered would silently empty the list
+    -- with no checkbox to clear it, so drop those keys.
+    local buckets = ns.Filters:GetBuckets()
+    for facet, keys in pairs(buckets) do
+        local active = db.filters[facet]
+        if active and next(active) then
+            local offered = {}
+            for _, key in ipairs(keys) do offered[key] = true end
+            for key in pairs(active) do
+                if not offered[key] then active[key] = nil end
+            end
+        end
+    end
+
     -- ----- Expansion facet (inside scroll) --------------------------------
     local expHeading = child:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     expHeading:SetText(L["EXPANSION"])
@@ -245,7 +261,7 @@ function Sidebar:Init(sidebar)
 
     local expAnchor = expHeading
     local rowH = 24
-    for i, key in ipairs(ns.EXPANSION_ORDER) do
+    for i, key in ipairs(buckets.exp) do
         local label = ns.EXPANSION_LABELS[key] or key
         local box = self:CreateFilterCheckbox(child, label, "exp", key,
             expAnchor, i == 1 and 4 or 0, nil, true)
@@ -257,10 +273,7 @@ function Sidebar:Init(sidebar)
     catHeading:SetText(L["CATEGORY"] or "Category")
     catHeading:SetTextColor(GOLD_DIM.r, GOLD_DIM.g, GOLD_DIM.b)
     catHeading:SetPoint("TOPLEFT", expAnchor, "BOTTOMLEFT", 0, -12)
-    local catDefs = {
-        "Achievement", "Campaign", "Exploration", "Holiday",
-        "Profession", "PvP", "Quest", "Raid", "Reputation",
-    }
+    local catDefs = buckets.cat
     local catAnchor = catHeading
     for i, key in ipairs(catDefs) do
         -- `key` is the raw DB code used for filtering; the checkbox label is
@@ -275,9 +288,7 @@ function Sidebar:Init(sidebar)
     kindHeading:SetText(L["KIND"] or "Source Kind")
     kindHeading:SetTextColor(GOLD_DIM.r, GOLD_DIM.g, GOLD_DIM.b)
     kindHeading:SetPoint("TOPLEFT", catAnchor, "BOTTOMLEFT", 0, -12)
-    local kindDefs = {
-        "Achievement", "Feat of Strength", "Quest", "Reputation",
-    }
+    local kindDefs = buckets.kind
     local kindAnchor = kindHeading
     for i, key in ipairs(kindDefs) do
         -- `key` is the raw DB code used for filtering; the checkbox label is
@@ -292,11 +303,15 @@ function Sidebar:Init(sidebar)
     factionHeading:SetText(L["FACTION"] or "Faction")
     factionHeading:SetTextColor(GOLD_DIM.r, GOLD_DIM.g, GOLD_DIM.b)
     factionHeading:SetPoint("TOPLEFT", kindAnchor, "BOTTOMLEFT", 0, -12)
-    local factionDefs = {
-        { key = "Alliance", label = L["FACTION_ALLIANCE"] or "Alliance" },
-        { key = "Horde",    label = L["FACTION_HORDE"] or "Horde" },
-        { key = "Both",     label = L["FACTION_BOTH"] or "Both Factions" },
+    local factionLabels = {
+        Alliance = L["FACTION_ALLIANCE"] or "Alliance",
+        Horde    = L["FACTION_HORDE"] or "Horde",
+        Both     = L["FACTION_BOTH"] or "Both Factions",
     }
+    local factionDefs = {}
+    for _, key in ipairs(buckets.faction) do
+        factionDefs[#factionDefs + 1] = { key = key, label = factionLabels[key] or key }
+    end
     local factionAnchor = factionHeading
     for i, def in ipairs(factionDefs) do
         local box = self:CreateFilterCheckbox(child, def.label, "faction", def.key,
@@ -337,7 +352,7 @@ function Sidebar:Init(sidebar)
     self.hideTimeSensBox = hideTimeSensBox
 
     -- Calculate total scroll child height
-    local totalSections = #ns.EXPANSION_ORDER + #catDefs + #kindDefs + #factionDefs + 2
+    local totalSections = #buckets.exp + #catDefs + #kindDefs + #factionDefs + 2
     local headingsHeight = 4 * 16  -- 4 additional headings (cat, kind, faction, availability) with spacing
     child:SetHeight(totalSections * rowH + headingsHeight + 36)
     scrollBox:FullUpdate(ScrollBoxConstants.UpdateImmediately)
@@ -348,7 +363,7 @@ function Sidebar:Init(sidebar)
     reset:SetPoint("BOTTOMLEFT", PAD_X, 10)
     reset:SetPoint("BOTTOMRIGHT", -PAD_X, 10)
     local resetIcon = reset:CreateTexture(nil, "ARTWORK")
-    resetIcon:SetTexture("Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-reset-16")
+    resetIcon:SetTexture(T.tex.reset)
     resetIcon:SetSize(12, 12)
     resetIcon:SetPoint("LEFT", 0, 0)
     resetIcon:SetVertexColor(GOLD_DIM.r, GOLD_DIM.g, GOLD_DIM.b)
@@ -413,7 +428,7 @@ function Sidebar:UpdateStatusButtons()
             btn.bg:SetColorTexture(GOLD.r, GOLD.g, GOLD.b, 1.0)
             btn.text:SetTextColor(DARK_TEXT.r, DARK_TEXT.g, DARK_TEXT.b)
         else
-            btn.bg:SetColorTexture(0.12, 0.10, 0.06, 0.6)
+            btn.bg:SetColorTexture(T.RGBA(T.col.segmentBg, 0.6))
             btn.text:SetTextColor(GOLD.r, GOLD.g, GOLD.b)
         end
     end

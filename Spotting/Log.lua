@@ -18,7 +18,86 @@ local GetNormalizedRealmName = GetNormalizedRealmName
 local UnitFullName = UnitFullName
 local UnitGUID = UnitGUID
 local UnitName = UnitName
+local UnitLevel = UnitLevel
+local CreateFrame = CreateFrame
 local time = time
+
+-- ---------------------------------------------------------------------------
+-- Moments recorded with a sighting, for achievements that look at the
+-- moment rather than the title (WoW Forever's set uses them). They are kept
+-- on the entry in SavedVariables but are not part of the export format.
+--   lowestLevel         lowest level a wearer was seen at (UnitLevel > 0)
+--   seenSoonAfterLogin  true once seen within SOON_AFTER_LOGIN of logging in
+--   seenAtCampfire      true once seen with a campfire nearby (the flavour's
+--                       ns.Flavor.campfireSpellID buff on the player)
+-- ---------------------------------------------------------------------------
+local SOON_AFTER_LOGIN = 120
+
+-- Set when PLAYER_ENTERING_WORLD reports a fresh login; a /reload leaves it
+-- unknown, so a sighting just after a reload never counts as one after login.
+local loginAt = nil
+do
+    local frame = CreateFrame and CreateFrame("Frame")
+    if frame and frame.RegisterEvent then
+        frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        frame:SetScript("OnEvent", function(_, _, isInitialLogin)
+            if isInitialLogin then
+                loginAt = time()
+            end
+        end)
+    end
+end
+
+local function SecondsSinceLogin(now)
+    if loginAt then
+        return now - loginAt
+    end
+    return nil
+end
+
+local function PlayerHasAura(spellID)
+    if not spellID then
+        return false
+    end
+    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, spellID)
+        return ok and aura ~= nil
+    end
+    if UnitBuff then
+        for i = 1, 40 do
+            local results = { pcall(UnitBuff, "player", i) }
+            if not results[1] or not results[2] then
+                break
+            end
+            if results[11] == spellID then -- 10th return value is the spell ID
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- Folds this sighting's moment into the entry (see the block above).
+local function RecordMoment(entry, unit, now)
+    -- Retail can hand back a secret value in combat; comparing one errors,
+    -- so a secret (or failed) read simply records no level.
+    local ok, raw = false, nil
+    if UnitLevel and unit then
+        ok, raw = pcall(UnitLevel, unit)
+    end
+    local secret = ok and _G.issecretvalue and _G.issecretvalue(raw)
+    local level = (ok and not secret) and tonumber(raw) or nil
+    if level and level > 0 and (not entry.lowestLevel or level < entry.lowestLevel) then
+        entry.lowestLevel = level
+    end
+    local since = SecondsSinceLogin(now)
+    if since and since >= 0 and since <= SOON_AFTER_LOGIN then
+        entry.seenSoonAfterLogin = true
+    end
+    if PlayerHasAura(ns.Flavor and ns.Flavor.campfireSpellID) then
+        entry.seenAtCampfire = true
+    end
+end
 
 local function GetRootDB()
     local db = _G.EpithetDB
@@ -130,6 +209,9 @@ local function NormalizeEntry(entry, now)
         quality = entry.quality,
         kind = entry.kind,
         cat = entry.cat,
+        lowestLevel = tonumber(entry.lowestLevel),
+        seenSoonAfterLogin = entry.seenSoonAfterLogin == true or nil,
+        seenAtCampfire = entry.seenAtCampfire == true or nil,
     }
 end
 
@@ -337,9 +419,13 @@ function Log:Record(titleID, unit, info)
         sex = nil
     end
 
+    -- firstName / lastName are the first and the latest player seen wearing
+    -- the title, as GetUnitName(unit, true) gives them. They are not a
+    -- person's first and last names, even though WoW Forever's names
+    -- ("Manny Hunters") have both.
     local entry = store[titleID]
     if type(entry) ~= "table" then
-        store[titleID] = {
+        entry = {
             firstSeen = now,
             lastSeen = now,
             count = 1,
@@ -355,9 +441,12 @@ function Log:Record(titleID, unit, info)
             kind = kind,
             cat = cat,
         }
+        RecordMoment(entry, unit, now)
+        store[titleID] = entry
         return true
     end
 
+    RecordMoment(entry, unit, now)
     entry.lastSeen = now
     entry.lastName = fullName
     entry.count = math.max(1, math.floor(tonumber(entry.count) or 1) + 1)

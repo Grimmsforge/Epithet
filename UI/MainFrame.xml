@@ -23,7 +23,6 @@
                         <Anchor point="TOPLEFT"/>
                         <Anchor point="TOPRIGHT"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15" a="0.85"/>
                 </Texture>
                 <Texture parentKey="BorderBottom">
                     <Size x="0" y="2"/>
@@ -31,7 +30,6 @@
                         <Anchor point="BOTTOMLEFT"/>
                         <Anchor point="BOTTOMRIGHT"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15" a="0.85"/>
                 </Texture>
                 <Texture parentKey="BorderLeft">
                     <Size x="2" y="0"/>
@@ -39,7 +37,6 @@
                         <Anchor point="TOPLEFT" x="0" y="-2"/>
                         <Anchor point="BOTTOMLEFT" x="0" y="2"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15" a="0.85"/>
                 </Texture>
                 <Texture parentKey="BorderRight">
                     <Size x="2" y="0"/>
@@ -47,7 +44,6 @@
                         <Anchor point="TOPRIGHT" x="0" y="-2"/>
                         <Anchor point="BOTTOMRIGHT" x="0" y="2"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15" a="0.85"/>
                 </Texture>
                 <!-- Inner accent line (1px, faint gold) -->
                 <Texture parentKey="InnerTop">
@@ -56,7 +52,6 @@
                         <Anchor point="TOPLEFT" x="2" y="-2"/>
                         <Anchor point="TOPRIGHT" x="-2" y="-2"/>
                     </Anchors>
-                    <Color r="0.72" g="0.60" b="0.36" a="0.18"/>
                 </Texture>
                 <Texture parentKey="InnerBottom">
                     <Size x="0" y="1"/>
@@ -64,7 +59,6 @@
                         <Anchor point="BOTTOMLEFT" x="2" y="2"/>
                         <Anchor point="BOTTOMRIGHT" x="-2" y="2"/>
                     </Anchors>
-                    <Color r="0.72" g="0.60" b="0.36" a="0.18"/>
                 </Texture>
                 <Texture parentKey="InnerLeft">
                     <Size x="1" y="0"/>
@@ -72,7 +66,6 @@
                         <Anchor point="TOPLEFT" x="2" y="-3"/>
                         <Anchor point="BOTTOMLEFT" x="2" y="3"/>
                     </Anchors>
-                    <Color r="0.72" g="0.60" b="0.36" a="0.18"/>
                 </Texture>
                 <Texture parentKey="InnerRight">
                     <Size x="1" y="0"/>
@@ -80,7 +73,6 @@
                         <Anchor point="TOPRIGHT" x="-2" y="-3"/>
                         <Anchor point="BOTTOMRIGHT" x="-2" y="3"/>
                     </Anchors>
-                    <Color r="0.72" g="0.60" b="0.36" a="0.18"/>
                 </Texture>
             </Layer>
         </Layers>
@@ -98,13 +90,11 @@
                 <Layers>
                     <Layer level="BACKGROUND">
                         <Texture parentKey="BG" setAllPoints="true">
-                            <Color r="0.08" g="0.06" b="0.03" a="0.92"/>
                         </Texture>
                     </Layer>
                     <Layer level="ARTWORK">
                         <!-- Logo icon (wax seal) -->
-                        <Texture parentKey="Logo"
-                                 file="Interface\AddOns\Epithet\icons\logo\epithet-wax-seal-red-mark-32">
+                        <Texture parentKey="Logo">
                             <Size x="30" y="30"/>
                             <Anchors>
                                 <Anchor point="LEFT" x="10" y="0"/>
@@ -115,7 +105,6 @@
                             <Anchors>
                                 <Anchor point="CENTER" x="0" y="0"/>
                             </Anchors>
-                            <Color r="0.91" g="0.78" b="0.45"/>
                         </FontString>
                         <!-- Separator below title bar -->
                         <Texture parentKey="Sep">
@@ -124,7 +113,6 @@
                                 <Anchor point="BOTTOMLEFT" x="0" y="0"/>
                                 <Anchor point="BOTTOMRIGHT" x="0" y="0"/>
                             </Anchors>
-                            <Color r="0.72" g="0.60" b="0.36" a="0.30"/>
                         </Texture>
                     </Layer>
                 </Layers>
@@ -138,7 +126,6 @@
                         <Layers>
                             <Layer level="BACKGROUND">
                                 <Texture parentKey="BG" file="Interface\Buttons\WHITE8X8" setAllPoints="true">
-                                    <Color r="0.16" g="0.12" b="0.07" a="0.95"/>
                                 </Texture>
                             </Layer>
                             <Layer level="ARTWORK">
@@ -148,7 +135,6 @@
                                         <Anchor point="TOPLEFT" x="0" y="0"/>
                                         <Anchor point="TOPRIGHT" x="0" y="0"/>
                                     </Anchors>
-                                    <Color r="0.72" g="0.60" b="0.36" a="0.82"/>
                                 </Texture>
                                 <Texture parentKey="BorderBottom" file="Interface\Buttons\WHITE8X8">
                                     <Size x="0" y="1"/>
@@ -156,7 +142,6 @@
                                         <Anchor point="BOTTOMLEFT" x="0" y="0"/>
                                         <Anchor point="BOTTOMRIGHT" x="0" y="0"/>
                                     </Anchors>
-                                    <Color r="0.72" g="0.60" b="0.36" a="0.82"/>
                                 </Texture>
                                 <Texture parentKey="BorderLeft" file="Interface\Buttons\WHITE8X8">
                                     <Size x="1" y="0"/>
@@ -164,7 +149,6 @@
                                         <Anchor point="TOPLEFT" x="0" y="-1"/>
                                         <Anchor point="BOTTOMLEFT" x="0" y="1"/>
                                     </Anchors>
-                                    <Color r="0.72" g="0.60" b="0.36" a="0.82"/>
                                 </Texture>
                                 <Texture parentKey="BorderRight" file="Interface\Buttons\WHITE8X8">
                                     <Size x="1" y="0"/>
@@ -172,14 +156,12 @@
                                         <Anchor point="TOPRIGHT" x="0" y="-1"/>
                                         <Anchor point="BOTTOMRIGHT" x="0" y="1"/>
                                     </Anchors>
-                                    <Color r="0.72" g="0.60" b="0.36" a="0.82"/>
                                 </Texture>
                                 <Texture parentKey="Icon" file="Interface\Buttons\UI-OptionsButton">
                                     <Size x="14" y="14"/>
                                     <Anchors>
                                         <Anchor point="CENTER"/>
                                     </Anchors>
-                                    <Color r="0.95" g="0.85" b="0.55" a="0.95"/>
                                 </Texture>
                             </Layer>
                         </Layers>
@@ -187,22 +169,6 @@
                             <OnClick>
                                 -- Wired from Lua in MainFrame:Init()
                             </OnClick>
-                            <OnEnter>
-                                self.Icon:SetVertexColor(1.0, 0.95, 0.75, 1.0)
-                                self.BG:SetVertexColor(0.21, 0.16, 0.10, 0.98)
-                                self.BorderTop:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-                                self.BorderBottom:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-                                self.BorderLeft:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-                                self.BorderRight:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-                            </OnEnter>
-                            <OnLeave>
-                                self.Icon:SetVertexColor(0.95, 0.85, 0.55, 0.95)
-                                self.BG:SetVertexColor(0.16, 0.12, 0.07, 0.95)
-                                self.BorderTop:SetVertexColor(0.72, 0.60, 0.36, 0.82)
-                                self.BorderBottom:SetVertexColor(0.72, 0.60, 0.36, 0.82)
-                                self.BorderLeft:SetVertexColor(0.72, 0.60, 0.36, 0.82)
-                                self.BorderRight:SetVertexColor(0.72, 0.60, 0.36, 0.82)
-                            </OnLeave>
                         </Scripts>
                     </Button>
                     <!-- Info / About button -->
@@ -214,7 +180,6 @@
                         <Layers>
                             <Layer level="BACKGROUND">
                                 <Texture parentKey="BG" file="Interface\Buttons\WHITE8X8" setAllPoints="true">
-                                    <Color r="0.16" g="0.12" b="0.07" a="0.95"/>
                                 </Texture>
                             </Layer>
                             <Layer level="ARTWORK">
@@ -224,7 +189,6 @@
                                         <Anchor point="TOPLEFT" x="0" y="0"/>
                                         <Anchor point="TOPRIGHT" x="0" y="0"/>
                                     </Anchors>
-                                    <Color r="0.72" g="0.60" b="0.36" a="0.82"/>
                                 </Texture>
                                 <Texture parentKey="BorderBottom" file="Interface\Buttons\WHITE8X8">
                                     <Size x="0" y="1"/>
@@ -232,7 +196,6 @@
                                         <Anchor point="BOTTOMLEFT" x="0" y="0"/>
                                         <Anchor point="BOTTOMRIGHT" x="0" y="0"/>
                                     </Anchors>
-                                    <Color r="0.72" g="0.60" b="0.36" a="0.82"/>
                                 </Texture>
                                 <Texture parentKey="BorderLeft" file="Interface\Buttons\WHITE8X8">
                                     <Size x="1" y="0"/>
@@ -240,7 +203,6 @@
                                         <Anchor point="TOPLEFT" x="0" y="-1"/>
                                         <Anchor point="BOTTOMLEFT" x="0" y="1"/>
                                     </Anchors>
-                                    <Color r="0.72" g="0.60" b="0.36" a="0.82"/>
                                 </Texture>
                                 <Texture parentKey="BorderRight" file="Interface\Buttons\WHITE8X8">
                                     <Size x="1" y="0"/>
@@ -248,14 +210,12 @@
                                         <Anchor point="TOPRIGHT" x="0" y="-1"/>
                                         <Anchor point="BOTTOMRIGHT" x="0" y="1"/>
                                     </Anchors>
-                                    <Color r="0.72" g="0.60" b="0.36" a="0.82"/>
                                 </Texture>
                                 <FontString parentKey="Label" inherits="GameFontNormal"
                                             text="i" justifyH="CENTER">
                                     <Anchors>
                                         <Anchor point="CENTER" x="0" y="-1"/>
                                     </Anchors>
-                                    <Color r="0.92" g="0.85" b="0.67" a="0.95"/>
                                 </FontString>
                             </Layer>
                         </Layers>
@@ -263,22 +223,6 @@
                             <OnClick>
                                 -- Wired from Lua in MainFrame:Init()
                             </OnClick>
-                            <OnEnter>
-                                self.Label:SetTextColor(0.96, 0.91, 0.78, 1.0)
-                                self.BG:SetVertexColor(0.21, 0.16, 0.10, 0.98)
-                                self.BorderTop:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-                                self.BorderBottom:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-                                self.BorderLeft:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-                                self.BorderRight:SetVertexColor(0.91, 0.78, 0.45, 1.0)
-                            </OnEnter>
-                            <OnLeave>
-                                self.Label:SetTextColor(0.92, 0.85, 0.67, 0.95)
-                                self.BG:SetVertexColor(0.16, 0.12, 0.07, 0.95)
-                                self.BorderTop:SetVertexColor(0.72, 0.60, 0.36, 0.82)
-                                self.BorderBottom:SetVertexColor(0.72, 0.60, 0.36, 0.82)
-                                self.BorderLeft:SetVertexColor(0.72, 0.60, 0.36, 0.82)
-                                self.BorderRight:SetVertexColor(0.72, 0.60, 0.36, 0.82)
-                            </OnLeave>
                         </Scripts>
                     </Button>
                     <!-- Close button (custom tinted icon) -->
@@ -290,7 +234,6 @@
                         <Layers>
                             <Layer level="BACKGROUND">
                                 <Texture parentKey="BG" file="Interface\Buttons\WHITE8X8" setAllPoints="true">
-                                    <Color r="0.16" g="0.12" b="0.07" a="0.95"/>
                                 </Texture>
                             </Layer>
                             <Layer level="ARTWORK">
@@ -300,7 +243,6 @@
                                         <Anchor point="TOPLEFT" x="0" y="0"/>
                                         <Anchor point="TOPRIGHT" x="0" y="0"/>
                                     </Anchors>
-                                    <Color r="0.85" g="0.54" b="0.32" a="0.95"/>
                                 </Texture>
                                 <Texture parentKey="BorderBottom" file="Interface\Buttons\WHITE8X8">
                                     <Size x="0" y="1"/>
@@ -308,7 +250,6 @@
                                         <Anchor point="BOTTOMLEFT" x="0" y="0"/>
                                         <Anchor point="BOTTOMRIGHT" x="0" y="0"/>
                                     </Anchors>
-                                    <Color r="0.85" g="0.54" b="0.32" a="0.95"/>
                                 </Texture>
                                 <Texture parentKey="BorderLeft" file="Interface\Buttons\WHITE8X8">
                                     <Size x="1" y="0"/>
@@ -316,7 +257,6 @@
                                         <Anchor point="TOPLEFT" x="0" y="-1"/>
                                         <Anchor point="BOTTOMLEFT" x="0" y="1"/>
                                     </Anchors>
-                                    <Color r="0.85" g="0.54" b="0.32" a="0.95"/>
                                 </Texture>
                                 <Texture parentKey="BorderRight" file="Interface\Buttons\WHITE8X8">
                                     <Size x="1" y="0"/>
@@ -324,15 +264,12 @@
                                         <Anchor point="TOPRIGHT" x="0" y="-1"/>
                                         <Anchor point="BOTTOMRIGHT" x="0" y="1"/>
                                     </Anchors>
-                                    <Color r="0.85" g="0.54" b="0.32" a="0.95"/>
                                 </Texture>
-                                <Texture parentKey="Icon"
-                                         file="Interface\AddOns\Epithet\icons\ui\epithet-ui-close-16">
+                                <Texture parentKey="Icon">
                                     <Size x="18" y="18"/>
                                     <Anchors>
                                         <Anchor point="CENTER"/>
                                     </Anchors>
-                                    <Color r="1.0" g="1.0" b="1.0" a="0.8"/>
                                 </Texture>
                             </Layer>
                         </Layers>
@@ -340,22 +277,6 @@
                             <OnClick>
                                 EpithetMainFrame:Hide()
                             </OnClick>
-                            <OnEnter>
-                                self.Icon:SetVertexColor(0.99, 0.89, 0.74, 1.0)
-                                self.BG:SetVertexColor(0.22, 0.14, 0.09, 0.98)
-                                self.BorderTop:SetVertexColor(0.97, 0.70, 0.45, 1.0)
-                                self.BorderBottom:SetVertexColor(0.97, 0.70, 0.45, 1.0)
-                                self.BorderLeft:SetVertexColor(0.97, 0.70, 0.45, 1.0)
-                                self.BorderRight:SetVertexColor(0.97, 0.70, 0.45, 1.0)
-                            </OnEnter>
-                            <OnLeave>
-                                self.Icon:SetVertexColor(0.95, 0.80, 0.66, 0.92)
-                                self.BG:SetVertexColor(0.16, 0.12, 0.07, 0.95)
-                                self.BorderTop:SetVertexColor(0.85, 0.54, 0.32, 0.95)
-                                self.BorderBottom:SetVertexColor(0.85, 0.54, 0.32, 0.95)
-                                self.BorderLeft:SetVertexColor(0.85, 0.54, 0.32, 0.95)
-                                self.BorderRight:SetVertexColor(0.85, 0.54, 0.32, 0.95)
-                            </OnLeave>
                         </Scripts>
                     </Button>
                 </Frames>
@@ -393,19 +314,9 @@
                             <Anchors>
                                 <Anchor point="LEFT" x="7" y="0"/>
                             </Anchors>
-                            <Color r="0.49" g="0.37" b="0.15" a="0.8"/>
                         </Texture>
                     </Layer>
                     <Layer level="ARTWORK">
-                        <!-- Crown icon positioned above the portrait -->
-                        <Texture name="$parentCrown" parentKey="Crown"
-                                 file="Interface\AddOns\Epithet\icons\logo\epithet-crown-mark-32">
-                            <Size x="28" y="28"/>
-                            <Anchors>
-                                <Anchor point="BOTTOM" relativeTo="$parentPortraitRing"
-                                        relativePoint="TOP" x="0" y="-6"/>
-                            </Anchors>
-                        </Texture>
                         <!-- Player portrait -->
                         <Texture name="$parentPortrait" parentKey="Portrait">
                             <Size x="46" y="46"/>
@@ -421,7 +332,6 @@
                                 <Anchor point="TOPLEFT" relativeTo="$parentPortrait"
                                         relativePoint="TOPRIGHT" x="12" y="-2"/>
                             </Anchors>
-                            <Color r="0.96" g="0.89" b="0.65"/>
                         </FontString>
                         <!-- Player Realm -->
                         <FontString name="$parentPlayerRealm" parentKey="PlayerRealm"
@@ -430,7 +340,6 @@
                                 <Anchor point="TOPLEFT" relativeTo="$parentPlayerName"
                                         relativePoint="BOTTOMLEFT" x="0" y="-1"/>
                             </Anchors>
-                            <Color r="0.61" g="0.55" b="0.42"/>
                         </FontString>
                         <!-- Titles Earned Label -->
                         <FontString name="$parentEarnedLabel" parentKey="EarnedLabel"
@@ -439,7 +348,6 @@
                             <Anchors>
                                 <Anchor point="TOPRIGHT" x="-8" y="-8"/>
                             </Anchors>
-                            <Color r="0.73" g="0.57" b="0.25"/>
                         </FontString>
                         <!-- Earned Count -->
                         <FontString name="$parentEarnedCount" parentKey="EarnedCount"
@@ -448,7 +356,6 @@
                                 <Anchor point="TOPRIGHT" relativeTo="$parentEarnedLabel"
                                         relativePoint="BOTTOMRIGHT" x="0" y="-2"/>
                             </Anchors>
-                            <Color r="0.96" g="0.89" b="0.65"/>
                         </FontString>
                     </Layer>
                 </Layers>
@@ -463,11 +370,9 @@
                             <Anchor point="RIGHT" x="-8" y="0"/>
                         </Anchors>
                         <BarTexture file="Interface\TargetingFrame\UI-StatusBar"/>
-                        <BarColor r="0.91" g="0.78" b="0.45"/>
                         <Layers>
                             <Layer level="BACKGROUND">
                                 <Texture parentKey="BG">
-                                    <Color r="0.14" g="0.11" b="0.06" a="0.95"/>
                                     <Anchors>
                                         <Anchor point="TOPLEFT"/>
                                         <Anchor point="BOTTOMRIGHT"/>
@@ -476,7 +381,6 @@
                             </Layer>
                             <Layer level="OVERLAY">
                                 <Texture parentKey="Border">
-                                    <Color r="0.55" g="0.45" b="0.25" a="0.45"/>
                                     <Anchors>
                                         <Anchor point="TOPLEFT" x="0" y="1"/>
                                         <Anchor point="TOPRIGHT" x="0" y="1"/>
@@ -484,7 +388,6 @@
                                     <Size x="0" y="1"/>
                                 </Texture>
                                 <Texture parentKey="BorderBottom">
-                                    <Color r="0.55" g="0.45" b="0.25" a="0.45"/>
                                     <Anchors>
                                         <Anchor point="BOTTOMLEFT" x="0" y="-1"/>
                                         <Anchor point="BOTTOMRIGHT" x="0" y="-1"/>
@@ -609,7 +512,6 @@
                             <Anchors>
                                 <Anchor point="LEFT" x="12" y="0"/>
                             </Anchors>
-                            <Color r="0.91" g="0.78" b="0.45"/>
                         </FontString>
                         <!-- Version -->
                         <FontString name="$parentVersion" parentKey="Version"
@@ -640,11 +542,9 @@
             <Layer level="BACKGROUND">
                 <!-- Hover/selection highlight -->
                 <Texture parentKey="Highlight" setAllPoints="true" hidden="true">
-                    <Color r="0.91" g="0.78" b="0.45" a="0.06"/>
                 </Texture>
                 <!-- Selection: subtle fill + gold border edges -->
                 <Texture parentKey="Selected" setAllPoints="true" hidden="true">
-                    <Color r="0.91" g="0.78" b="0.45" a="0.06"/>
                 </Texture>
                 <Texture parentKey="SelBorderTop" hidden="true">
                     <Size x="0" y="1"/>
@@ -652,7 +552,6 @@
                         <Anchor point="TOPLEFT"/>
                         <Anchor point="TOPRIGHT"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15" a="0.7"/>
                 </Texture>
                 <Texture parentKey="SelBorderBottom" hidden="true">
                     <Size x="0" y="1"/>
@@ -660,7 +559,6 @@
                         <Anchor point="BOTTOMLEFT"/>
                         <Anchor point="BOTTOMRIGHT"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15" a="0.7"/>
                 </Texture>
                 <Texture parentKey="SelBorderLeft" hidden="true">
                     <Size x="1" y="0"/>
@@ -668,7 +566,6 @@
                         <Anchor point="TOPLEFT"/>
                         <Anchor point="BOTTOMLEFT"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15" a="0.7"/>
                 </Texture>
                 <Texture parentKey="SelBorderRight" hidden="true">
                     <Size x="1" y="0"/>
@@ -676,7 +573,6 @@
                         <Anchor point="TOPRIGHT"/>
                         <Anchor point="BOTTOMRIGHT"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15" a="0.7"/>
                 </Texture>
                 <!-- Active title left accent bar -->
                 <Texture parentKey="ActiveBar" hidden="true">
@@ -685,7 +581,6 @@
                         <Anchor point="TOPLEFT"/>
                         <Anchor point="BOTTOMLEFT"/>
                     </Anchors>
-                    <Color r="0.91" g="0.78" b="0.45" a="1.0"/>
                 </Texture>
             </Layer>
 
@@ -712,7 +607,6 @@
                     <Anchors>
                         <Anchor point="RIGHT" x="-52" y="0"/>
                     </Anchors>
-                    <Color r="0.61" g="0.55" b="0.42"/>
                 </FontString>
                 <!-- ACTIVE chip -->
                 <FontString parentKey="ActiveChip" inherits="GameFontHighlightSmall"
@@ -721,7 +615,6 @@
                     <Anchors>
                         <Anchor point="RIGHT" x="-120" y="0"/>
                     </Anchors>
-                    <Color r="0.05" g="0.04" b="0.02"/>
                 </FontString>
 
                 <!-- Title text (row 1) -->
@@ -739,7 +632,6 @@
                         <Anchor point="TOPLEFT" x="64" y="-34"/>
                         <Anchor point="TOPRIGHT" x="-180" y="-34"/>
                     </Anchors>
-                    <Color r="0.61" g="0.55" b="0.42"/>
                 </FontString>
             </Layer>
         </Layers>
@@ -770,7 +662,6 @@
                     <Anchors>
                         <Anchor point="LEFT" x="10" y="0"/>
                     </Anchors>
-                    <Color r="0.49" g="0.37" b="0.15"/>
                 </FontString>
                 <FontString parentKey="Count" inherits="GameFontDisableSmall"
                             justifyH="LEFT">
@@ -778,7 +669,6 @@
                         <Anchor point="LEFT" relativeTo="$parentLabel"
                                 relativePoint="RIGHT" x="6" y="0"/>
                     </Anchors>
-                    <Color r="0.61" g="0.55" b="0.42"/>
                 </FontString>
             </Layer>
             <Layer level="BACKGROUND">
@@ -788,7 +678,6 @@
                         <Anchor point="BOTTOMLEFT" x="8" y="0"/>
                         <Anchor point="BOTTOMRIGHT" x="-8" y="0"/>
                     </Anchors>
-                    <Color r="0.72" g="0.60" b="0.36" a="0.22"/>
                 </Texture>
             </Layer>
         </Layers>

@@ -43,7 +43,7 @@ Epithet/
 ├── Epithet.toc              # Addon manifest
 ├── Core/
 │   ├── Epithet.lua          # Addon bootstrap, slash commands, minimap button, event wiring
-│   ├── Theme.lua            # Shared theme helpers and palette
+│   ├── Theme.lua            # Every colour as a named token, skin helpers, per-flavour Theme.Apply
 │   ├── TitleData.lua        # Live title scan and static data bridge
 │   ├── Filters.lua          # Filtering, sorting, and display list logic
 │   ├── Settings.lua         # Blizzard settings panel
@@ -67,21 +67,33 @@ Epithet/
 │   └── LogbookUI.lua        # Spotting log and achievements UI
 ├── WhatsNew/
 │   ├── Content.lua          # What's New content registry
-│   └── Versions/
-│       ├── v1_3_0.lua       # Content for a single version's popup
-│       ├── v1_3_1.lua       # Content for a single version's popup
-│       └── v1_3_2.lua       # A version can optionally add its own vX_Y_Z/ art folder (banners, screenshots)
-├── data/
-│   ├── TitlesDB.enGB.lua    # Bundled static title database (enGB base / canonical)
-│   ├── TitlesDB.ruRU.lua.example  # Template for a localised prose overlay
-│   └── schema.json          # Data schema
+│   ├── Retail/              # Retail's release notes, one file per version ([AllowLoadGameType standard])
+│   └── Forever/             # WoW Forever's release notes ([AllowLoadGameType camelot])
+├── Flavors/                 # What differs per game flavour (see docs/FLAVOURS.md)
+│   ├── Retail/
+│   │   └── Achievements.lua # Retail's achievement list ([AllowLoadGameType standard])
+│   └── Forever/             # [AllowLoadGameType camelot]
+│       ├── Flavor.lua       # Flavour settings (ns.Flavor)
+│       ├── Theme.lua        # The "Verdigris" theme overrides
+│       └── Achievements.lua # Forever's achievement list
+├── data/                    # One folder per flavour, nothing at the root (collector-generated, gitignored)
+│   ├── retail/              # Retail live and PTR ([AllowLoadGameType standard])
+│   │   ├── TitlesDB.enGB.lua    # Bundled static title database (enGB base / canonical)
+│   │   ├── TitlesDB.<code>.lua  # Sparse localised prose overlays (deDE, frFR, ruRU, zhCN)
+│   │   └── schema.json          # Data schema
+│   └── forever/             # WoW Forever ([AllowLoadGameType camelot])
+│       ├── TitlesDB.enGB.lua    # Separate title set with its own title IDs
+│       └── schema.json
 ├── Locales/
 │   ├── LocaleManager.lua    # Locale registry, ns.L proxy, resolution API
 │   └── enGB.lua             # Default locale strings
 ├── libs/                    # Embedded Ace3 + LibDataBroker/LibDBIcon (see below)
 ├── icons/
 ├── docs/                    # Release notes and technical guides
-├── scripts/                 # Build, fetch-libs, link, and release scripts
+├── scripts/                 # Build, fetch-libs, link, probe, release and validate scripts
+├── tools/
+│   ├── tests/               # Tests for both flavours, in a Lua VM (cd tools/tests; npm install; npm test)
+│   └── probe/               # Dev-only diagnostics addon for client differences (never shipped)
 ├── LICENSE
 ├── NOTICE
 └── README.md

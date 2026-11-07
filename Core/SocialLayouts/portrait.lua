@@ -30,11 +30,11 @@ local PORTRAIT_MASK = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
 -- Supply your own ring border: opaque frame with a transparent circular centre.
 -- For a quick test with no custom art, "Interface\\Minimap\\UI-Minimap-Border"
 -- is a ready-made circular ring (its rope styling will not match the theme).
-local PORTRAIT_RING = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-portrait-ring"
+local PORTRAIT_RING = T.tex.portraitRing
 -- Swallowtail banner tail (left-pointing white silhouette, tinted per theme;
 -- the right side reuses this flipped horizontally).
-local BANNER_TAIL = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-banner-tail"
-local BANNER_TAIL_TRIM = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-banner-tail-trim"
+local BANNER_TAIL = T.tex.bannerTail
+local BANNER_TAIL_TRIM = T.tex.bannerTailTrim
 
 local PORTRAIT_MODE_2D = "2d"
 local PORTRAIT_MODE_3D = "3d"
@@ -216,9 +216,9 @@ local function LayoutBanner(frame, m)
     frame.centerCol:SetPoint("BOTTOM", frame, "BOTTOM", 0, m.bannerBottomInset or 8)
     frame.centerCol:SetSize(bannerWidth, bannerHeight)
 
-    local fill = (T and T.col and T.col.parch) or { r = 0.95, g = 0.91, b = 0.83 }
-    local tab = (T and T.col and T.col.panel) or { r = 0.88, g = 0.84, b = 0.74 }
-    local line = (T and T.col and T.col.goldDeep) or { r = 0.13, g = 0.11, b = 0.09 }
+    local fill = T.col.parch
+    local tab = T.col.panel
+    local line = T.col.goldDeep
 
     if frame.bannerFill then
         frame.bannerFill:ClearAllPoints()
@@ -423,7 +423,7 @@ Layouts:RegisterLayout("portrait", {
             end
             frame.titleText:SetJustifyH("CENTER")
             frame.titleText:SetJustifyV("MIDDLE")
-            frame.titleText:SetShadowColor(0.08, 0.05, 0.01, 0.95)
+            frame.titleText:SetShadowColor(T.RGBA(T.col.portraitTextShadow, 0.95))
             frame.titleText:SetShadowOffset(1, -1)
         end
 
@@ -431,7 +431,7 @@ Layouts:RegisterLayout("portrait", {
             frame.rarityText:SetWordWrap(false)
             frame.rarityText:SetJustifyH("LEFT")
             frame.rarityText:SetJustifyV("MIDDLE")
-            frame.rarityText:SetShadowColor(0.08, 0.05, 0.01, 0.95)
+            frame.rarityText:SetShadowColor(T.RGBA(T.col.portraitTextShadow, 0.95))
             frame.rarityText:SetShadowOffset(1, -1)
         end
 
@@ -449,7 +449,7 @@ Layouts:RegisterLayout("portrait", {
         end
 
         if frame.portraitBG then
-            frame.portraitBG:SetColorTexture(0.09, 0.08, 0.08, 0.55)
+            frame.portraitBG:SetColorTexture(T.RGBA(T.col.portraitBgSoft, 0.55))
         end
 
         -- Show the object for the active mode, hide the other (and the ring in 2D).

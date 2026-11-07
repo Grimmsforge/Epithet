@@ -228,6 +228,86 @@ function Filters:Sort(records, mode)
 end
 
 -- ---------------------------------------------------------------------------
+-- Sidebar buckets present in the loaded data
+-- ---------------------------------------------------------------------------
+-- Each flavour ships its own title set (Retail spans every expansion; WoW
+-- Forever is all "classic" with PvP Rank and Profession kinds Retail lacks), so
+-- the sidebar lists only the buckets the loaded data actually uses, instead of
+-- a fixed list that would be mostly empty, or missing kinds, on one of them.
+-- `order` fixes the display order of known codes; any other code present is
+-- appended alphabetically so new collector codes still get a row. With no data
+-- loaded at all, the full `order` is returned so the sidebar keeps its shape.
+local function PresentBuckets(field, order)
+    local present = {}
+    local any = false
+    local titles = ns.EpithetData and ns.EpithetData.titles
+    for _, entry in pairs(titles or {}) do
+        local v = entry[field]
+        if v ~= nil and v ~= "" then
+            present[v] = true
+            any = true
+        end
+    end
+
+    local out = {}
+    if not any then
+        for i, key in ipairs(order) do out[i] = key end
+        return out
+    end
+
+    local known = {}
+    for _, key in ipairs(order) do
+        known[key] = true
+        if present[key] then out[#out + 1] = key end
+    end
+    local extras = {}
+    for key in pairs(present) do
+        if not known[key] then extras[#extras + 1] = key end
+    end
+    sort(extras)
+    for _, key in ipairs(extras) do out[#out + 1] = key end
+    return out
+end
+
+local CATEGORY_ORDER = {
+    "Achievement", "Campaign", "Exploration", "Holiday",
+    "Profession", "PvP", "Quest", "Raid", "Reputation",
+}
+local KIND_ORDER = {
+    "Achievement", "Feat of Strength", "Quest", "Reputation",
+    "PvP Rank", "Profession", "Item", "Promotion",
+}
+
+-- Returns { exp = {...}, cat = {...}, kind = {...}, faction = {...} }: the
+-- ordered bucket codes the sidebar should offer for the loaded data. Faction
+-- buckets are "Alliance", "Horde" and "Both" (titles with no faction).
+function Filters:GetBuckets()
+    local factions = {}
+    local titles = ns.EpithetData and ns.EpithetData.titles
+    local hasAlliance, hasHorde, hasNeutral = false, false, false
+    for _, entry in pairs(titles or {}) do
+        if entry.faction == "Alliance" then
+            hasAlliance = true
+        elseif entry.faction == "Horde" then
+            hasHorde = true
+        else
+            hasNeutral = true
+        end
+    end
+    local noData = not (hasAlliance or hasHorde or hasNeutral)
+    if hasAlliance or noData then factions[#factions + 1] = "Alliance" end
+    if hasHorde or noData then factions[#factions + 1] = "Horde" end
+    if hasNeutral or noData then factions[#factions + 1] = "Both" end
+
+    return {
+        exp     = PresentBuckets("exp", ns.EXPANSION_ORDER),
+        cat     = PresentBuckets("cat", CATEGORY_ORDER),
+        kind    = PresentBuckets("kind", KIND_ORDER),
+        faction = factions,
+    }
+end
+
+-- ---------------------------------------------------------------------------
 -- Compute sidebar counts (against FULL dataset, not filtered)
 -- Returns: { rarity={[1]=n,...}, type={prefix=n,...}, exp={classic=n,...},
 --            earned=n, unearned=n, total=n }
@@ -270,9 +350,11 @@ function Filters:ComputeCounts(records)
             counts.type.suffix = counts.type.suffix + 1
         end
 
+        -- Counted for any expansion code, not just the known order, so a code
+        -- the sidebar shows because the loaded data carries it is never left at 0.
         local exp = record.exp or ""
-        if counts.exp[exp] then
-            counts.exp[exp] = counts.exp[exp] + 1
+        if exp ~= "" then
+            counts.exp[exp] = (counts.exp[exp] or 0) + 1
         end
 
         -- Category

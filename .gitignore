@@ -1,12 +1,18 @@
 # Epithet - WoW Addon
 # =====================
 
-# data/ holds curated / collector-generated files (title databases, schema) that
-# are NOT distributed via source control. Ignore the entire folder except the
-# .gitkeep placeholder that preserves it in git — so anything dropped in here
-# (TitlesDB.enGB.lua, localised overlays, schema.json, ...) can never be committed.
+# data/ holds collector-generated files (title databases, schema) that are NOT
+# distributed via source control. It has one folder per flavour and nothing at
+# its root: data/retail/ (Retail and PTR) and data/forever/ (WoW Forever). Only
+# each folder's .gitkeep is tracked, so anything dropped in here (TitlesDB.enGB.lua,
+# localised overlays, schema.json, ...) can never be committed.
 data/*
-!data/.gitkeep
+!data/retail/
+!data/forever/
+data/retail/*
+data/forever/*
+!data/retail/.gitkeep
+!data/forever/.gitkeep
 
 # Build output
 dist/

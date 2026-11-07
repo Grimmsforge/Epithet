@@ -2,6 +2,43 @@
 
 ---
 
+## [1.4.1] - Unreleased
+
+### Added
+
+- **Forever title bar badge** — "FOREVER" over an infinity flourish, in Epithet's own serif, beside the seal in the main window's title bar on WoW Forever.
+
+### Changed
+
+- **Compass ring around your portrait** — A compass ring now frames your portrait in the main window header on both games: gold on Retail, verdigris bronze on WoW Forever (matching the ring on other players' title cards).
+- **No crown in the main window header** — The small gold crown above your portrait is gone on both games. The title card on a targeted player keeps its crown.
+- **What's New is optional per release** — A release without notes no longer needs any; nothing opens after the update, and `/epithet whatsnew` shows the newest notes there are. On WoW Forever, 1.4.1 shows the 1.4 welcome again, now with the compass ring pictured.
+- **Pictures in What's New** — Notes can show one of Epithet's textures by name (`![](tex:headerPortraitRing =96x96)`).
+
+## [1.4.0] - Unreleased
+
+### Added
+
+- **WoW Forever support** — Epithet runs on WoW Forever (interface 16001) with its own title data: all 40 Forever titles, including both factions' PvP rank ladders, with the faction variants (the two Sergeants) told apart by the player's faction.
+- **Verdigris theme (Forever)** — A Forever-only colour theme taken from the Forever logo, and a bronze compass-ring portrait frame on the title card.
+- **Forever achievements** — 64 achievements on Forever: 48 that work with its titles, a new "spot all 40" step, and 15 made for Forever (rank ladders, rival centaur clans, families, new race and class pairings, campfires, launch week).
+- **First and last names (Forever)** — The header shows the player's full name, and a surname is never mistaken for a title on the title card or when spotting.
+- **Logbook sighting details** — Each sighting records the wearer's lowest level, whether it came soon after logging in, and whether a campfire was nearby (Forever). They are not part of export codes.
+- **Translations** — All new achievement text and What's New content in deDE, frFR, ruRU and zhCN.
+
+### Changed
+
+- **Per-flavour packages** — The build makes a lean zip per game: retail, PTR and forever each hold only the files and data their game loads.
+- **Per-character data keyed by character ID** — Per-character achievements and owned titles are saved under the character's ID, with the name kept as a label, so they survive a Retail name change. Existing data moves across at each character's first login.
+- **Reachable secret (Retail)** — "The Whole Aviary" asked for 700 distinct titles, more than the 694 Retail has, which also blocked Secret Keeper. It now asks for 650.
+- **Title reading** — A title that exists as both a prefix and a suffix is read by where it sits in the name.
+- **What's New per flavour** — Retail and Forever each have their own release notes.
+
+### Fixed
+
+- **Achievement file limit** — The achievements module had reached Lua's 200-local limit, which would have stopped it loading after further additions. It now has room to spare, and a test guards every file.
+- **Secret values in combat** — Recording a sighting no longer risks an error if the game hides a player's level in combat.
+
 ## [1.3.3] - 2026-11-02
 
 ### Changed

@@ -32,10 +32,17 @@ end
 -- Example: "![alt](path =460x230)"; defaults to 96x96 if no size is present.
 local DEFAULT_IMAGE_SIZE = 96
 
+-- The path may also be "tex:<name>", one of Epithet's textures by its
+-- Theme.tex name ("![ring](tex:portraitRing =96x96)"), so notes never spell out
+-- an Epithet file path and follow any flavour's texture override.
 local function ParseImageDirective(raw)
     local path, w, h = match(raw, "^(.-)%s*=%s*(%d+)x(%d+)%s*$")
     if not path then
         path = raw
+    end
+    local texName = match(path, "^tex:([%w_]+)$")
+    if texName then
+        path = T and T.tex and T.tex[texName] or nil
     end
     return path, tonumber(w) or DEFAULT_IMAGE_SIZE, tonumber(h) or DEFAULT_IMAGE_SIZE
 end
@@ -70,7 +77,9 @@ local function BuildBlocks(body)
 
             if imageDirective and imageDirective ~= "" then
                 local path, w, h = ParseImageDirective(imageDirective)
-                blocks[#blocks + 1] = { type = "image", path = path, w = w, h = h }
+                if path then  -- an unknown tex: name is skipped, not drawn as a blank box
+                    blocks[#blocks + 1] = { type = "image", path = path, w = w, h = h }
+                end
             elseif h2 then
                 blocks[#blocks + 1] = { type = "h2", text = RenderInlineColor(h2) }
             elseif h1 then
@@ -281,6 +290,39 @@ function WhatsNew:GetContentForVersion(version)
     return container[version]
 end
 
+-- Whether version a is no newer than b ("1.4.9" <= "1.4.10"), part by part.
+local function VersionAtMost(a, b)
+    local pa, pb = {}, {}
+    for n in tostring(a):gmatch("%d+") do pa[#pa + 1] = tonumber(n) end
+    for n in tostring(b):gmatch("%d+") do pb[#pb + 1] = tonumber(n) end
+    for i = 1, math.max(#pa, #pb) do
+        local x, y = pa[i] or 0, pb[i] or 0
+        if x ~= y then
+            return x < y
+        end
+    end
+    return true
+end
+
+-- The newest version with notes for this game, no newer than `atMost` (the
+-- current version by default). A release does not need notes of its own:
+-- without them the window does not open by itself after the update, and
+-- /epithet whatsnew shows the newest notes there are.
+function WhatsNew:GetLatestContentVersion(atMost)
+    local container = ns.WhatsNewContent and ns.WhatsNewContent.versions
+    if type(container) ~= "table" then
+        return nil
+    end
+    atMost = atMost or self:GetCurrentVersion()
+    local best = nil
+    for version in pairs(container) do
+        if VersionAtMost(version, atMost) and (not best or VersionAtMost(best, version)) then
+            best = version
+        end
+    end
+    return best
+end
+
 -- Resolves localized content fields.
 -- Accepts either a direct string or a locale-keyed table and falls back to
 -- enUS, enGB, default, then empty string.
@@ -397,77 +439,33 @@ function WhatsNew:EnsureDialog()
         insets = { left = 1, right = 1, top = 1, bottom = 1 },
     })
 
-    if T and T.col then
-        frame:SetBackdropColor(T.col.bg0.r, T.col.bg0.g, T.col.bg0.b, 0.98)
-        frame:SetBackdropBorderColor(T.col.line.r, T.col.line.g, T.col.line.b, 0.9)
-    else
-        frame:SetBackdropColor(0.08, 0.06, 0.03, 0.98)
-        frame:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.9)
-    end
+    frame:SetBackdropColor(T.RGBA(T.col.bg0, 0.98))
+    frame:SetBackdropBorderColor(T.RGBA(T.col.line, 0.9))
     frame:Hide()
 
-    -- Applies shared bordered button chrome.
-    -- Text label when iconPath is nil; centered icon when provided.
+    -- What's New buttons: the shared bordered button, whose border does not
+    -- change on hover here. A centred icon when iconPath is given (gold,
+    -- brightening on hover), a text label otherwise.
+    local ICON_LOOKS = T.ButtonVariant(T.ButtonLooks.standard, {
+        idle  = { text = false, icon = { "gold" } },
+        hover = { text = false, icon = { "goldBright" }, border = false },
+    })
+    local LABEL_LOOKS = T.ButtonVariant(T.ButtonLooks.standard, {
+        hover = { border = false },
+    })
     local function Skin(button, iconPath)
-        local bg = button:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-        button.bg = bg
-
-        local top = button:CreateTexture(nil, "BORDER")
-        top:SetHeight(1)
-        top:SetPoint("TOPLEFT")
-        top:SetPoint("TOPRIGHT")
-        top:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-
-        local bottom = button:CreateTexture(nil, "BORDER")
-        bottom:SetHeight(1)
-        bottom:SetPoint("BOTTOMLEFT")
-        bottom:SetPoint("BOTTOMRIGHT")
-        bottom:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-
-        local left = button:CreateTexture(nil, "BORDER")
-        left:SetWidth(1)
-        left:SetPoint("TOPLEFT")
-        left:SetPoint("BOTTOMLEFT")
-        left:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-
-        local right = button:CreateTexture(nil, "BORDER")
-        right:SetWidth(1)
-        right:SetPoint("TOPRIGHT")
-        right:SetPoint("BOTTOMRIGHT")
-        right:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-
         if iconPath then
             local icon = button:CreateTexture(nil, "OVERLAY")
             icon:SetSize(18, 18)
             icon:SetPoint("CENTER")
             icon:SetTexture(iconPath)
-            icon:SetVertexColor(0.91, 0.78, 0.45)
             button.icon = icon
-
-            button:SetScript("OnEnter", function(self_)
-                self_.bg:SetColorTexture(0.16, 0.12, 0.07, 1.0)
-                self_.icon:SetVertexColor(0.96, 0.89, 0.65)
-            end)
-            button:SetScript("OnLeave", function(self_)
-                self_.bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-                self_.icon:SetVertexColor(0.91, 0.78, 0.45)
-            end)
+            T.SkinButton(button, ICON_LOOKS)
         else
             local label = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             label:SetPoint("CENTER")
-            label:SetTextColor(0.91, 0.78, 0.45)
             button.label = label
-
-            button:SetScript("OnEnter", function(self_)
-                self_.bg:SetColorTexture(0.16, 0.12, 0.07, 1.0)
-                self_.label:SetTextColor(0.96, 0.89, 0.65)
-            end)
-            button:SetScript("OnLeave", function(self_)
-                self_.bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-                self_.label:SetTextColor(0.91, 0.78, 0.45)
-            end)
+            T.SkinButton(button, LABEL_LOOKS)
         end
     end
 
@@ -475,7 +473,7 @@ function WhatsNew:EnsureDialog()
     local logo = frame:CreateTexture(nil, "ARTWORK")
     logo:SetSize(28, 28)
     logo:SetPoint("TOPLEFT", 14, -10)
-    logo:SetTexture("Interface\\AddOns\\Epithet\\icons\\logo\\epithet-wax-seal-red-mark-32")
+    logo:SetTexture(T.tex.logoSeal)
 
     local heading = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     heading:SetPoint("LEFT", logo, "RIGHT", 8, 0)
@@ -486,13 +484,13 @@ function WhatsNew:EnsureDialog()
     local closeButton = CreateFrame("Button", nil, frame)
     closeButton:SetSize(26, 26)
     closeButton:SetPoint("TOPRIGHT", -8, -8)
-    Skin(closeButton, "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-close-16")
+    Skin(closeButton, T.tex.close)
 
     local divider = frame:CreateTexture(nil, "BORDER")
     divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -38)
     divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -38)
     divider:SetHeight(1)
-    divider:SetColorTexture(0.55, 0.45, 0.26, 0.35)
+    divider:SetColorTexture(T.RGBA(T.col.frameBorder, 0.35))
 
     local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -48)
@@ -516,13 +514,13 @@ function WhatsNew:EnsureDialog()
     scrollCutoffBottom:SetPoint("BOTTOMLEFT", scrollCutoffOverlay, "BOTTOMLEFT", 0, 0)
     scrollCutoffBottom:SetPoint("BOTTOMRIGHT", scrollCutoffOverlay, "BOTTOMRIGHT", 0, 0)
     scrollCutoffBottom:SetHeight(1)
-    scrollCutoffBottom:SetColorTexture(0.95, 0.82, 0.48, 0.95)
+    scrollCutoffBottom:SetColorTexture(T.RGBA(T.col.scrollFade, 0.95))
 
     local scrollCutoffBottomSoft = scrollCutoffOverlay:CreateTexture(nil, "OVERLAY")
     scrollCutoffBottomSoft:SetPoint("BOTTOMLEFT", scrollCutoffBottom, "TOPLEFT", 0, 0)
     scrollCutoffBottomSoft:SetPoint("BOTTOMRIGHT", scrollCutoffBottom, "TOPRIGHT", 0, 0)
     scrollCutoffBottomSoft:SetHeight(1)
-    scrollCutoffBottomSoft:SetColorTexture(0.95, 0.82, 0.48, 0.35)
+    scrollCutoffBottomSoft:SetColorTexture(T.RGBA(T.col.scrollFade, 0.35))
 
     local dismiss = CreateFrame("Button", nil, frame)
     dismiss:SetSize(220, 24)

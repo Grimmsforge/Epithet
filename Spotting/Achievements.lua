@@ -25,7 +25,6 @@ local time = time
 local THIRTY_DAYS = 30 * 24 * 60 * 60
 local SEVEN_DAYS = 7 * 24 * 60 * 60
 local FWENDS_THRESHOLD = 10
-local CLASS_TOTAL = 13
 local CREATURE_OF_HABIT_STREAK_DAYS = 7
 local SEEING_STARS_THRESHOLD = 5
 local MUSEUM_CURATOR_THRESHOLD = 5
@@ -43,13 +42,13 @@ local DECORATED_VETERAN_THRESHOLD = 5
 local NOTHING_NEW_MIN_OWNED = 10
 local POPULAR_PEOPLE_THRESHOLD = 3
 local POPULAR_FIRST_SIGHTINGS_THRESHOLD = 5
-local JENKINS_TITLE_ID = 110
-local INSANE_TITLE_ID = 112
-local EXPECTED_ACHIEVEMENT_TOTAL = 76
 
 local staticMetaByID = nil
 local expansionTotal = nil
-local Registry = nil
+-- Filled by DefineSet from the flavour's set file.
+local Registry = {}
+local RegistryByID = {}
+local ActiveSet = nil
 local EarnedStoreFor = nil
 
 local function CountKeys(tbl)
@@ -151,7 +150,15 @@ local function IsExplicitRemoved(meta)
     return false
 end
 
-local function CurrentCharKey()
+local CurrentCharKey
+local EnsureRootDB
+
+do
+-- The key per-character data was saved under before character IDs: name-realm
+-- from UnitFullName. Kept exactly as it was, only to find data to migrate.
+-- (On WoW Forever UnitFullName's second value is the surname, so this gave
+-- "Manny-Hunters".)
+local function LegacyCharKey()
     local name, realm
     if UnitFullName then
         name, realm = UnitFullName("player")
@@ -165,7 +172,106 @@ local function CurrentCharKey()
     return name
 end
 
-local function EnsureRootDB()
+-- Folds one character's data saved under `fromKey` into `toKey`, keeping the
+-- earliest record of anything both have, then drops `fromKey`.
+local function MergeCharacterStores(db, fromKey, toKey)
+    -- Earned achievements: id -> { earned = ts, detail }.
+    local oldAch = db.achievementsByChar[fromKey]
+    if type(oldAch) == "table" then
+        local into = db.achievementsByChar[toKey]
+        if type(into) ~= "table" then
+            db.achievementsByChar[toKey] = oldAch
+        else
+            for id, rec in pairs(oldAch) do
+                local have = into[id]
+                local haveTs = type(have) == "table" and tonumber(have.earned) or nil
+                local oldTs = type(rec) == "table" and tonumber(rec.earned) or nil
+                if not have or (oldTs and (not haveTs or oldTs < haveTs)) then
+                    into[id] = rec
+                end
+            end
+        end
+        db.achievementsByChar[fromKey] = nil
+    end
+
+    -- Owned titles: titleID -> { ts, reliable, source } (or a bare timestamp).
+    local oldOwned = db.ownedSeen[fromKey]
+    if type(oldOwned) == "table" then
+        local into = db.ownedSeen[toKey]
+        if type(into) ~= "table" then
+            db.ownedSeen[toKey] = oldOwned
+        else
+            local function Read(raw)
+                if type(raw) == "table" then
+                    return tonumber(raw.ts), raw.reliable == true
+                end
+                return tonumber(raw), false
+            end
+            for titleID, raw in pairs(oldOwned) do
+                local have = into[titleID]
+                if have == nil then
+                    into[titleID] = raw
+                else
+                    local oldTs, oldReliable = Read(raw)
+                    local haveTs, haveReliable = Read(have)
+                    -- A reliable date beats a guessed one; otherwise the earlier wins.
+                    if (oldReliable and not haveReliable)
+                        or (oldReliable == haveReliable and oldTs and (not haveTs or oldTs < haveTs)) then
+                        into[titleID] = raw
+                    end
+                end
+            end
+        end
+        db.ownedSeen[fromKey] = nil
+    end
+
+    if db.ownedSeenBaseline[fromKey] then
+        db.ownedSeenBaseline[toKey] = true
+        db.ownedSeenBaseline[fromKey] = nil
+    end
+end
+
+-- A readable label for each character ID, refreshed at every login.
+local function RecordCharacterLabel(db, guid)
+    db.characters = type(db.characters) == "table" and db.characters or {}
+    local label = type(db.characters[guid]) == "table" and db.characters[guid] or {}
+    -- GetUnitName gives the full "First Last" on WoW Forever, the name on Retail.
+    local name = (GetUnitName and GetUnitName("player", false)) or (UnitName and UnitName("player"))
+    if type(name) == "string" and name ~= "" then
+        label.name = name
+    end
+    local showRealm = not ns.Flavor or ns.Flavor.showRealm ~= false
+    local realm = showRealm and GetNormalizedRealmName and GetNormalizedRealmName() or nil
+    label.realm = (type(realm) == "string" and realm ~= "") and realm or nil
+    label.lastLogin = time()
+    db.characters[guid] = label
+end
+
+local migratedFor = nil
+
+-- Per-character data is keyed by the character's ID (UnitGUID), which
+-- survives a Retail name change; db.characters[id] holds the readable label.
+-- The first call each session moves anything still saved under the old
+-- name-realm key across. Nil until the game knows who the player is.
+CurrentCharKey = function()
+    local guid = UnitGUID and UnitGUID("player")
+    if type(guid) ~= "string" or guid == "" then
+        return nil
+    end
+    if migratedFor ~= guid then
+        migratedFor = guid
+        local db = EnsureRootDB()
+        local legacy = LegacyCharKey()
+        if legacy and legacy ~= guid then
+            MergeCharacterStores(db, legacy, guid)
+        end
+        RecordCharacterLabel(db, guid)
+    end
+    return guid
+end
+end
+
+EnsureRootDB = function()
     if type(_G.EpithetDB) ~= "table" then
         _G.EpithetDB = {}
     end
@@ -192,6 +298,11 @@ local function EnsureRootDB()
         db.spottingEvents = {}
     end
     return db
+end
+
+-- The key for this character's per-character achievement data (see above).
+Achievements.CurrentCharKey = function()
+    return CurrentCharKey()
 end
 
 -- Shared with Spotting/Capture.lua so both modules guarantee the same set of
@@ -301,7 +412,8 @@ local function CheckCount(threshold)
     end
 end
 
-local function CheckRollCall(spotted)
+local function CheckRollCallOf(classTotal)
+  return function(spotted)
     local seen = {}
     local n = 0
 
@@ -313,11 +425,12 @@ local function CheckRollCall(spotted)
         end
     end
 
-    if n >= CLASS_TOTAL then
-        return true, tostring(CLASS_TOTAL)
+    if n >= classTotal then
+        return true, tostring(classTotal)
     end
 
     return false
+  end
 end
 
 local function CheckFullSpectrum(spotted)
@@ -620,27 +733,26 @@ local function CheckGnomeSpotter(spotted)
     return false
 end
 
-local function CheckAtLeastChicken(spotted)
-    return spotted[JENKINS_TITLE_ID] ~= nil
-end
-
-local function CheckCertified(spotted)
-    return spotted[INSANE_TITLE_ID] ~= nil
+local function CheckSpottedTitleID(titleID)
+    return function(spotted)
+        return spotted[titleID] ~= nil
+    end
 end
 
 local function CountOverachieverProgress()
     local db = EnsureRootDB()
     local n = 0
 
+    local hidden = ActiveSet and ActiveSet.hiddenByID or {}
     for id in pairs(db.achievements or {}) do
-        if id ~= "overachiever" then
+        if id ~= "overachiever" and not hidden[id] then
             n = n + 1
         end
     end
 
     local mine = db.achievementsByChar and db.achievementsByChar[CurrentCharKey()]
     for id in pairs(mine or {}) do
-        if id ~= "overachiever" then
+        if id ~= "overachiever" and not hidden[id] then
             n = n + 1
         end
     end
@@ -1195,7 +1307,7 @@ local function CountEarnedSecrets()
     local total = 0
 
     for _, def in ipairs(Registry or {}) do
-        if def.secret == true then
+        if def.secret == true and not def.timeLimited then
             total = total + 1
             local store = EarnedStoreFor and EarnedStoreFor(def, false) or nil
             if store and store[def.id] then
@@ -1373,6 +1485,11 @@ local function CheckWindowShopper()
     return false
 end
 
+-- Progress functions are only reached through Achievements.B, so they live in
+-- a block (the file is near Lua's 200-local limit) and are handed out via
+-- ProgressFns.
+local ProgressFns = {}
+do
 local function ProgressCountSpotted(threshold)
     return function(spotted)
         local n = CountSpotted(spotted)
@@ -1380,7 +1497,8 @@ local function ProgressCountSpotted(threshold)
     end
 end
 
-local function ProgressRollCall(spotted)
+local function ProgressRollCallOf(classTotal)
+  return function(spotted)
     local seen = {}
     local n = 0
     for _, entry in pairs(spotted) do
@@ -1390,7 +1508,8 @@ local function ProgressRollCall(spotted)
             n = n + 1
         end
     end
-    return math.min(n, CLASS_TOTAL), CLASS_TOTAL
+    return math.min(n, classTotal), classTotal
+  end
 end
 
 local function ProgressFullSpectrum(spotted)
@@ -1619,6 +1738,418 @@ local function ProgressOwnedSpectrum()
     return math.min(n, 5), 5, true
 end
 
+ProgressFns.ProgressCountSpotted = ProgressCountSpotted
+ProgressFns.ProgressRollCallOf = ProgressRollCallOf
+ProgressFns.ProgressFullSpectrum = ProgressFullSpectrum
+ProgressFns.ProgressGrandTour = ProgressGrandTour
+ProgressFns.ProgressPottedHistory = ProgressPottedHistory
+ProgressFns.ProgressSeeingStars = ProgressSeeingStars
+ProgressFns.ProgressMuseumCurator = ProgressMuseumCurator
+ProgressFns.ProgressGnomeSpotter = ProgressGnomeSpotter
+ProgressFns.ProgressOverachiever = ProgressOverachiever
+ProgressFns.ProgressKeyword = ProgressKeyword
+ProgressFns.ProgressSourceSpotting = ProgressSourceSpotting
+ProgressFns.ProgressTotalSightings = ProgressTotalSightings
+ProgressFns.ProgressWeekendWarrior = ProgressWeekendWarrior
+ProgressFns.ProgressFullWeek = ProgressFullWeek
+ProgressFns.ProgressYearInField = ProgressYearInField
+ProgressFns.ProgressCurriculumVitae = ProgressCurriculumVitae
+ProgressFns.ProgressDecoratedVeteran = ProgressDecoratedVeteran
+ProgressFns.ProgressPopular = ProgressPopular
+ProgressFns.ProgressSecretKeeper = ProgressSecretKeeper
+ProgressFns.ProgressOwnedCount = ProgressOwnedCount
+ProgressFns.ProgressOwnedSpectrum = ProgressOwnedSpectrum
+end
+
+-- Scoped: the file is near Lua's 200-local limit, so these helpers live in
+-- a block and leave only Achievements.BuildersFromData behind.
+do
+-- ---------------------------------------------------------------------------
+-- Builders over the flavour's own title data (first used by WoW Forever's
+-- set). They read the catalogue this client loaded, so a set says what to
+-- look for and the data decides which titles that is.
+-- ---------------------------------------------------------------------------
+
+-- titleID -> { faction, rank } for PvP rank titles. The data states the rank
+-- only in prose ("Horde PvP rank 7 of 14"); a rank field would be sturdier.
+local pvpRanks = nil
+local function PvPRanks()
+    if pvpRanks then
+        return pvpRanks
+    end
+    pvpRanks = {}
+    for titleID, meta in pairs(BuildStaticMetaByID()) do
+        if meta.kind == "PvP Rank" then
+            local proseFaction, rank = tostring(meta.obtainability_reason or ""):match("(%a+) PvP rank (%d+) of %d+")
+            local faction = meta.faction or proseFaction
+            if faction and rank then
+                pvpRanks[titleID] = { faction = faction, rank = tonumber(rank) }
+            end
+        end
+    end
+    return pvpRanks
+end
+
+local function FactionLabel(faction)
+    if faction == "Alliance" and _G.FACTION_ALLIANCE then
+        return _G.FACTION_ALLIANCE
+    elseif faction == "Horde" and _G.FACTION_HORDE then
+        return _G.FACTION_HORDE
+    end
+    return faction
+end
+
+-- The faction ladder closest to complete: faction, ranks spotted, ranks in it.
+local function BestLadder(spotted)
+    local total, have = {}, {}
+    for titleID, info in pairs(PvPRanks()) do
+        total[info.faction] = (total[info.faction] or 0) + 1
+        if spotted[titleID] then
+            have[info.faction] = (have[info.faction] or 0) + 1
+        end
+    end
+    local factions = {}
+    for faction in pairs(total) do
+        factions[#factions + 1] = faction
+    end
+    table.sort(factions)
+    local best, bestHave, bestTotal = nil, -1, 0
+    for _, faction in ipairs(factions) do
+        local h = have[faction] or 0
+        if h > bestHave then
+            best, bestHave, bestTotal = faction, h, total[faction]
+        end
+    end
+    return best, math.max(bestHave, 0), bestTotal
+end
+
+local function CheckFullLadder(spotted)
+    local faction, h, n = BestLadder(spotted)
+    if faction and n > 0 and h >= n then
+        return true, FactionLabel(faction)
+    end
+    return false
+end
+
+local function ProgressFullLadder(spotted)
+    local _, h, n = BestLadder(spotted)
+    if n < 1 then
+        return nil
+    end
+    return math.min(h, n), n
+end
+
+-- The same rank spotted on both factions; `rank` limits it to one rank.
+local function CheckMirrorRank(rank)
+    return function(spotted)
+        local byRank = {}
+        for titleID, info in pairs(PvPRanks()) do
+            if spotted[titleID] and (rank == nil or info.rank == rank) then
+                local factions = byRank[info.rank] or {}
+                factions[info.faction] = true
+                byRank[info.rank] = factions
+            end
+        end
+        local ranks = {}
+        for r in pairs(byRank) do
+            ranks[#ranks + 1] = r
+        end
+        table.sort(ranks)
+        for _, r in ipairs(ranks) do
+            if CountKeys(byRank[r]) >= 2 then
+                return true, tostring(r)
+            end
+        end
+        return false
+    end
+end
+
+-- Every title of one kind ("Profession", "Reputation", ...) in the data.
+local function KindCounts(spotted, kind)
+    local n, have = 0, 0
+    for titleID, meta in pairs(BuildStaticMetaByID()) do
+        if meta.kind == kind then
+            n = n + 1
+            if spotted[titleID] then
+                have = have + 1
+            end
+        end
+    end
+    return have, n
+end
+
+local function CheckAllOfKind(kind)
+    return function(spotted)
+        local have, n = KindCounts(spotted, kind)
+        return n > 0 and have >= n
+    end
+end
+
+local function ProgressAllOfKind(kind)
+    return function(spotted)
+        local have, n = KindCounts(spotted, kind)
+        if n < 1 then
+            return nil
+        end
+        return math.min(have, n), n
+    end
+end
+
+-- Every listed title, by its data key ("of the gelkis").
+local function CheckSpottedKeys(keys)
+    return function(spotted)
+        local titles = ns.EpithetData and ns.EpithetData.titles
+        if not titles or #keys == 0 then
+            return false
+        end
+        for _, key in ipairs(keys) do
+            local data = titles[key]
+            local titleID = data and tonumber(data.titleID)
+            if not titleID or not spotted[titleID] then
+                return false
+            end
+        end
+        return true
+    end
+end
+
+-- Race and class pairs, by the client's file tokens ({ "Orc", "MAGE" }).
+-- Undead is "Scourge". Each spotted title carries the first wearer's tags.
+local function CountRaceClassPairs(spotted, list)
+    local seen = {}
+    for _, entry in pairs(spotted) do
+        local race, class = entry and entry.raceTag, entry and entry.classTag
+        if type(race) == "string" and type(class) == "string" then
+            seen[race:lower() .. "|" .. class:lower()] = true
+        end
+    end
+    local have = 0
+    for _, pair in ipairs(list) do
+        if seen[pair[1]:lower() .. "|" .. pair[2]:lower()] then
+            have = have + 1
+        end
+    end
+    return have
+end
+
+local function CheckRaceClassPairs(list)
+    return function(spotted)
+        return CountRaceClassPairs(spotted, list) >= #list
+    end
+end
+
+local function ProgressRaceClassPairs(list)
+    return function(spotted)
+        return math.min(CountRaceClassPairs(spotted, list), #list), #list
+    end
+end
+
+-- `n` titles first spotted on one race in a single day.
+local function CheckRaceInOneDay(race, n)
+    local wanted = race:lower()
+    return function(spotted)
+        local byDay = {}
+        for _, entry in pairs(spotted) do
+            local tag = entry and entry.raceTag
+            local firstSeen = entry and tonumber(entry.firstSeen)
+            if type(tag) == "string" and tag:lower() == wanted and firstSeen then
+                local day = date("%Y-%m-%d", firstSeen)
+                byDay[day] = (byDay[day] or 0) + 1
+                if byDay[day] >= n then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+end
+
+-- A title first spotted between two dates ("YYYY-MM-DD", inclusive, local time).
+local function CheckFirstSeenBetween(fromDay, toDay)
+    return function(spotted)
+        for titleID, entry in pairs(spotted) do
+            local firstSeen = entry and tonumber(entry.firstSeen)
+            if firstSeen then
+                local day = date("%Y-%m-%d", firstSeen)
+                if day >= fromDay and day <= toDay then
+                    return true, ResolveSpottedTitleDetail(titleID, entry)
+                end
+            end
+        end
+        return false
+    end
+end
+
+-- A WoW Forever player name is "First Last". Retail names are one word
+-- (with "-Realm" for other realms), so they never have a surname.
+local function Surname(fullName)
+    if type(fullName) ~= "string" then
+        return nil
+    end
+    local first, last = fullName:match("^(%S+)%s+(%S+)$")
+    return last, first
+end
+
+-- The surname shared by the most different spotted players: surname, count.
+local function BestSharedSurname(spotted)
+    local names, counts, display = {}, {}, {}
+    local function Add(who)
+        local last = Surname(who)
+        if not last then
+            return
+        end
+        local key = last:lower()
+        local seen = names[key]
+        if not seen then
+            seen = {}
+            names[key] = seen
+            counts[key] = 0
+            display[key] = last
+        end
+        if not seen[who] then
+            seen[who] = true
+            counts[key] = counts[key] + 1
+        end
+    end
+    for _, entry in pairs(spotted) do
+        if entry then
+            Add(entry.firstName)
+            Add(entry.lastName)
+        end
+    end
+    local keys = {}
+    for key in pairs(counts) do
+        keys[#keys + 1] = key
+    end
+    table.sort(keys)
+    local best, bestN = nil, 0
+    for _, key in ipairs(keys) do
+        if counts[key] > bestN then
+            best, bestN = display[key], counts[key]
+        end
+    end
+    return best, bestN
+end
+
+local function CheckSharedSurname(n)
+    return function(spotted)
+        local surname, count = BestSharedSurname(spotted)
+        if surname and count >= n then
+            return true, surname
+        end
+        return false
+    end
+end
+
+local function ProgressSharedSurname(n)
+    return function(spotted)
+        local _, count = BestSharedSurname(spotted)
+        return math.min(count, n), n
+    end
+end
+
+-- One title worn by two different players who share a surname.
+local function CheckSameTitleSameFamily(spotted)
+    for titleID, entry in pairs(spotted) do
+        local a, b = entry and entry.firstName, entry and entry.lastName
+        if a and b and a ~= b then
+            local lastA, lastB = Surname(a), Surname(b)
+            if lastA and lastB and lastA:lower() == lastB:lower() then
+                return true, ResolveSpottedTitleDetail(titleID, entry)
+            end
+        end
+    end
+    return false
+end
+
+-- Moments the Logbook records with a sighting (see Spotting/Log.lua).
+local function CheckAnySeenFlag(field)
+    return function(spotted)
+        for titleID, entry in pairs(spotted) do
+            if entry and entry[field] == true then
+                return true, ResolveSpottedTitleDetail(titleID, entry)
+            end
+        end
+        return false
+    end
+end
+
+local function CountSeenFlag(spotted, field)
+    local n = 0
+    for _, entry in pairs(spotted) do
+        if entry and entry[field] == true then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+local function CheckSeenFlagCount(field, n)
+    return function(spotted)
+        return CountSeenFlag(spotted, field) >= n
+    end
+end
+
+local function ProgressSeenFlagCount(field, n)
+    return function(spotted)
+        return math.min(CountSeenFlag(spotted, field), n), n
+    end
+end
+
+-- A title seen on a player below `belowLevel`.
+local function CheckSeenBelowLevel(belowLevel)
+    return function(spotted)
+        for titleID, entry in pairs(spotted) do
+            local level = entry and tonumber(entry.lowestLevel)
+            if level and level > 0 and level < belowLevel then
+                return true, ResolveSpottedTitleDetail(titleID, entry)
+            end
+        end
+        return false
+    end
+end
+
+-- A title first spotted on one of these races. A token matches as a prefix,
+-- so { "Skyborne" } also covers a "Skyborne..." token for the other faction.
+local function CheckFirstSpotRace(tokens)
+    return function(spotted)
+        for titleID, entry in pairs(spotted) do
+            local tag = entry and entry.raceTag
+            if type(tag) == "string" then
+                local lower = tag:lower()
+                for _, token in ipairs(tokens) do
+                    if lower:sub(1, #token) == token:lower() then
+                        return true, ResolveSpottedTitleDetail(titleID, entry)
+                    end
+                end
+            end
+        end
+        return false
+    end
+end
+
+Achievements.BuildersFromData = {
+    CheckAnySeenFlag = CheckAnySeenFlag,
+    CheckSeenFlagCount = CheckSeenFlagCount,
+    ProgressSeenFlagCount = ProgressSeenFlagCount,
+    CheckSeenBelowLevel = CheckSeenBelowLevel,
+    CheckFirstSpotRace = CheckFirstSpotRace,
+    CheckFullLadder = CheckFullLadder,
+    ProgressFullLadder = ProgressFullLadder,
+    CheckMirrorRank = CheckMirrorRank,
+    CheckAllOfKind = CheckAllOfKind,
+    ProgressAllOfKind = ProgressAllOfKind,
+    CheckSpottedKeys = CheckSpottedKeys,
+    CheckRaceClassPairs = CheckRaceClassPairs,
+    ProgressRaceClassPairs = ProgressRaceClassPairs,
+    CheckRaceInOneDay = CheckRaceInOneDay,
+    CheckFirstSeenBetween = CheckFirstSeenBetween,
+    CheckSharedSurname = CheckSharedSurname,
+    ProgressSharedSurname = ProgressSharedSurname,
+    CheckSameTitleSameFamily = CheckSameTitleSameFamily,
+}
+end
+
 local function GroupLabel(group)
     if group == "collection" then
         return (L and L["SPOT_ACHV_GROUP_COLLECTION"]) or "Collection"
@@ -1641,94 +2172,315 @@ local function LocaleAllows(def)
     return def.locales[locale] == true
 end
 
-Registry = {
-    { id = "count_1", check = CheckCount(1), progress = ProgressCountSpotted(1), group = "spotting" },
-    { id = "count_10", check = CheckCount(10), progress = ProgressCountSpotted(10), group = "spotting" },
-    { id = "count_25", check = CheckCount(25), progress = ProgressCountSpotted(25), group = "spotting" },
-    { id = "count_50", check = CheckCount(50), progress = ProgressCountSpotted(50), group = "spotting" },
-    { id = "count_100", check = CheckCount(100), progress = ProgressCountSpotted(100), group = "spotting" },
-    { id = "count_200", check = CheckCount(200), progress = ProgressCountSpotted(200), group = "spotting" },
-    { id = "count_350", check = CheckCount(350), progress = ProgressCountSpotted(350), group = "spotting" },
-    { id = "count_500", check = CheckCount(500), progress = ProgressCountSpotted(500), group = "spotting" },
-    { id = "count_700", check = CheckCount(700), progress = ProgressCountSpotted(700), group = "spotting", secret = true },
-    { id = "roll_call", check = CheckRollCall, progress = ProgressRollCall, group = "spotting" },
-    { id = "full_spectrum", check = CheckFullSpectrum, progress = ProgressFullSpectrum, group = "spotting" },
-    { id = "both_ends", check = CheckBothEnds, group = "spotting" },
-    { id = "grand_tour", check = CheckGrandTour, progress = ProgressGrandTour, group = "spotting" },
-    { id = "title_fwends", check = CheckTitleFwends, group = "spotting", secret = true },
-    { id = "havent_we_met", check = CheckHaventWeMet, group = "spotting" },
-    { id = "long_con", check = CheckLongCon, group = "spotting", secret = true },
-    { id = "night_shift", check = CheckNightShift, group = "spotting", secret = true },
-    { id = "busy_day", check = CheckBusyDay, group = "spotting" },
-    { id = "capital_offence", check = CheckCapitalOffence, group = "spotting" },
-    { id = "old_money", check = CheckOldMoney, group = "spotting" },
-    { id = "legendary_spot", check = CheckLegendarySpot, group = "spotting" },
-    { id = "potted_history", check = CheckPottedHistory, progress = ProgressPottedHistory, group = "spotting" },
-    { id = "diplomatic_immunity", check = CheckDiplomaticImmunity, group = "spotting" },
-    { id = "small_world", check = CheckSmallWorld, group = "spotting" },
-    { id = "creature_of_habit", check = CheckCreatureOfHabit, group = "spotting" },
-    { id = "seeing_stars", check = CheckSeeingStars, progress = ProgressSeeingStars, group = "spotting" },
-    { id = "museum_curator", check = CheckMuseumCurator, progress = ProgressMuseumCurator, group = "spotting" },
-    { id = "gnome_spotter", check = CheckGnomeSpotter, progress = ProgressGnomeSpotter, group = "spotting" },
-    { id = "at_least_chicken", check = CheckAtLeastChicken, group = "spotting", secret = true },
-    { id = "certified", check = CheckCertified, group = "spotting", secret = true },
-    { id = "guising", check = CheckGuising, group = "spotting", secret = true },
-
-    { id = "quite_a_mouthful", check = CheckQuiteAMouthful, group = "spotting" },
-    { id = "terse", check = CheckTerse, group = "spotting" },
-    { id = "lord_of_lords", check = CheckKeyword("lord_of_lords"), progress = ProgressKeyword("lord_of_lords"), group = "spotting" },
-    { id = "masterclass", check = CheckKeyword("masterclass"), progress = ProgressKeyword("masterclass"), group = "spotting" },
-    { id = "slay", check = CheckKeyword("slay"), progress = ProgressKeyword("slay"), group = "spotting" },
-    { id = "gladiator_groupie", check = CheckGladiatorGroupie, progress = ProgressSourceSpotting("pvp"), group = "spotting" },
-    { id = "raid_spectator", check = CheckRaidSpectator, progress = ProgressSourceSpotting("raid"), group = "spotting" },
-    { id = "brown_noser", check = CheckBrownNoser, progress = ProgressSourceSpotting("reputation"), group = "spotting" },
-    { id = "how_its_made", check = CheckHowItsMade, group = "spotting" },
-    { id = "people_watcher", check = CheckPeopleWatcher, progress = ProgressTotalSightings(PEOPLE_WATCHER_THRESHOLD), group = "spotting" },
-    { id = "professional_lurker", check = CheckProfessionalLurker, progress = ProgressTotalSightings(PROFESSIONAL_LURKER_THRESHOLD), group = "spotting" },
-    { id = "double_take", check = CheckDoubleTake, group = "spotting" },
-    { id = "early_bird", check = CheckEarlyBird, group = "spotting" },
-    { id = "weekend_warrior", check = CheckWeekendWarrior, progress = ProgressWeekendWarrior, group = "spotting" },
-    { id = "full_week", check = CheckFullWeek, progress = ProgressFullWeek, group = "spotting" },
-    { id = "year_in_field", check = CheckYearInField, progress = ProgressYearInField, group = "spotting" },
-    { id = "welcome_back", check = CheckWelcomeBack, group = "spotting", secret = true },
-    { id = "feast_your_eyes", check = CheckFeastYourEyes, group = "spotting", secret = true },
-    { id = "participation_award", check = CheckParticipationAward, group = "spotting" },
-    { id = "sneaky_beaky", check = CheckSneakyBeaky, group = "spotting" },
-    { id = "dead_man_walking", check = CheckDeadManWalking, group = "spotting" },
-    { id = "old_school", check = CheckOldSchool, group = "spotting" },
-    { id = "popular", check = CheckPopular, progress = ProgressPopular, group = "spotting" },
-    { id = "restraining_order", check = CheckRestrainingOrder, group = "spotting", secret = true },
-    { id = "beyond_the_grave", check = CheckBeyondTheGrave, group = "spotting", secret = true },
-    { id = "know_thy_enemy", check = CheckKnowThyEnemy, group = "spotting" },
-
-    { id = "owned_1", check = CheckOwnedCount(1), progress = ProgressOwnedCount(1), group = "collection", scope = "character" },
-    { id = "owned_10", check = CheckOwnedCount(10), progress = ProgressOwnedCount(10), group = "collection", scope = "character" },
-    { id = "owned_25", check = CheckOwnedCount(25), progress = ProgressOwnedCount(25), group = "collection", scope = "character" },
-    { id = "owned_50", check = CheckOwnedCount(50), progress = ProgressOwnedCount(50), group = "collection", scope = "character" },
-    { id = "owned_100", check = CheckOwnedCount(100), progress = ProgressOwnedCount(100), group = "collection", scope = "character" },
-    { id = "owned_spectrum", check = CheckOwnedSpectrum, progress = ProgressOwnedSpectrum, group = "collection", scope = "character" },
-    { id = "owned_both_ends", check = CheckOwnedBothEnds, group = "collection", scope = "character" },
-    { id = "owned_legendary", check = CheckOwnedLegendary, group = "collection", scope = "character" },
-    { id = "owned_removed", check = CheckOwnedRemoved, group = "collection", scope = "character" },
-    { id = "impulse_purchase", check = CheckImpulsePurchase, group = "collection", scope = "character" },
-    { id = "curriculum_vitae", check = CheckCurriculumVitae, progress = ProgressCurriculumVitae, group = "collection", scope = "character" },
-    { id = "decorated_veteran", check = CheckDecoratedVeteran, progress = ProgressDecoratedVeteran, group = "collection", scope = "character" },
-    { id = "nothing_new", check = CheckNothingNew, group = "collection", scope = "character" },
-    { id = "matching_set", check = CheckMatchingSet, group = "collection", scope = "character" },
-
-    { id = "takes_one", check = CheckTakesOne, group = "crossovers", scope = "character", secret = true },
-    { id = "window_shopper", check = CheckWindowShopper, group = "crossovers", scope = "character", secret = true },
-    { id = "twinsies", check = CheckTwinsies, group = "crossovers", scope = "character", secret = true },
-
-    -- Must be last so the same evaluation pass can count newly-earned achievements.
-    { id = "secret_keeper", check = CheckSecretKeeper, progress = ProgressSecretKeeper, group = "spotting" },
-    { id = "overachiever", check = CheckOverachiever, progress = ProgressOverachiever, group = "spotting" },
+-- Check and progress builders shared by every flavour's achievement set
+-- (Flavors/<Flavour>/Achievements.lua). A check returns ok[, detail]; a
+-- progress returns current, target[, onCharacter].
+Achievements.B = {
+    CheckBeyondTheGrave = CheckBeyondTheGrave,
+    CheckBothEnds = CheckBothEnds,
+    CheckBrownNoser = CheckBrownNoser,
+    CheckBusyDay = CheckBusyDay,
+    CheckCapitalOffence = CheckCapitalOffence,
+    CheckCount = CheckCount,
+    CheckCreatureOfHabit = CheckCreatureOfHabit,
+    CheckCurriculumVitae = CheckCurriculumVitae,
+    CheckDeadManWalking = CheckDeadManWalking,
+    CheckDecoratedVeteran = CheckDecoratedVeteran,
+    CheckDiplomaticImmunity = CheckDiplomaticImmunity,
+    CheckDoubleTake = CheckDoubleTake,
+    CheckEarlyBird = CheckEarlyBird,
+    CheckFeastYourEyes = CheckFeastYourEyes,
+    CheckFullSpectrum = CheckFullSpectrum,
+    CheckFullWeek = CheckFullWeek,
+    CheckGladiatorGroupie = CheckGladiatorGroupie,
+    CheckGnomeSpotter = CheckGnomeSpotter,
+    CheckGrandTour = CheckGrandTour,
+    CheckGuising = CheckGuising,
+    CheckHaventWeMet = CheckHaventWeMet,
+    CheckHowItsMade = CheckHowItsMade,
+    CheckImpulsePurchase = CheckImpulsePurchase,
+    CheckKeyword = CheckKeyword,
+    CheckKnowThyEnemy = CheckKnowThyEnemy,
+    CheckLegendarySpot = CheckLegendarySpot,
+    CheckLongCon = CheckLongCon,
+    CheckMatchingSet = CheckMatchingSet,
+    CheckMuseumCurator = CheckMuseumCurator,
+    CheckNightShift = CheckNightShift,
+    CheckNothingNew = CheckNothingNew,
+    CheckOldMoney = CheckOldMoney,
+    CheckOldSchool = CheckOldSchool,
+    CheckOverachiever = CheckOverachiever,
+    CheckOwnedBothEnds = CheckOwnedBothEnds,
+    CheckOwnedCount = CheckOwnedCount,
+    CheckOwnedLegendary = CheckOwnedLegendary,
+    CheckOwnedRemoved = CheckOwnedRemoved,
+    CheckOwnedSpectrum = CheckOwnedSpectrum,
+    CheckParticipationAward = CheckParticipationAward,
+    CheckPeopleWatcher = CheckPeopleWatcher,
+    CheckPopular = CheckPopular,
+    CheckPottedHistory = CheckPottedHistory,
+    CheckProfessionalLurker = CheckProfessionalLurker,
+    CheckQuiteAMouthful = CheckQuiteAMouthful,
+    CheckRaidSpectator = CheckRaidSpectator,
+    CheckRestrainingOrder = CheckRestrainingOrder,
+    CheckRollCallOf = CheckRollCallOf,
+    CheckSecretKeeper = CheckSecretKeeper,
+    CheckSeeingStars = CheckSeeingStars,
+    CheckSmallWorld = CheckSmallWorld,
+    CheckSneakyBeaky = CheckSneakyBeaky,
+    CheckSpottedTitleID = CheckSpottedTitleID,
+    CheckTakesOne = CheckTakesOne,
+    CheckTerse = CheckTerse,
+    CheckTitleFwends = CheckTitleFwends,
+    CheckTwinsies = CheckTwinsies,
+    CheckWeekendWarrior = CheckWeekendWarrior,
+    CheckWelcomeBack = CheckWelcomeBack,
+    CheckWindowShopper = CheckWindowShopper,
+    CheckYearInField = CheckYearInField,
 }
 
-local RegistryByID = {}
-for _, def in ipairs(Registry) do
-    RegistryByID[def.id] = def
+for name, fn in pairs(ProgressFns) do
+    Achievements.B[name] = fn
 end
+for name, fn in pairs(Achievements.BuildersFromData) do
+    Achievements.B[name] = fn
+end
+Achievements.BuildersFromData = nil
+
+-- ---------------------------------------------------------------------------
+-- Achievability audit
+-- Each check notes what it needs from the title data, so Achievements:Audit()
+-- can say which achievements this client's data makes impossible, or free.
+-- Checks that depend on play rather than data (times, people, zones, races)
+-- note nothing and are never flagged.
+-- ---------------------------------------------------------------------------
+local needsByCheck = setmetatable({}, { __mode = "k" })
+do
+    local B = Achievements.B
+    -- Builders that take a parameter: note the need on each check they make.
+    local function Note(name, need)
+        local make = B[name]
+        B[name] = function(...)
+            local check = make(...)
+            needsByCheck[check] = need(...)
+            return check
+        end
+    end
+    Note("CheckCount", function(n) return { spot = n } end)
+    Note("CheckOwnedCount", function(n) return { own = n } end)
+    Note("CheckKeyword", function(id) return { keyword = KEYWORD_ACHIEVEMENTS[id], count = TITLE_KEYWORD_THRESHOLD } end)
+    Note("CheckSpottedTitleID", function(titleID) return { titleID = titleID } end)
+    Note("CheckSpottedKeys", function(keys) return { keys = keys } end)
+    Note("CheckAllOfKind", function(kind) return { kind = kind } end)
+    Note("CheckMirrorRank", function(rank) return { mirror = rank or "any" } end)
+    Note("CheckRollCallOf", function(n) return { classes = n } end)
+
+    -- Fixed checks.
+    local fixed = {
+        CheckFullSpectrum = { tiers = 5 },
+        CheckOwnedSpectrum = { tiers = 5 },
+        CheckMatchingSet = { tiers = 5 },
+        CheckSeeingStars = { tier = 5, count = SEEING_STARS_THRESHOLD },
+        CheckLegendarySpot = { tier = 5, count = 1 },
+        CheckOwnedLegendary = { tier = 5, count = 1 },
+        CheckParticipationAward = { tier = 1, count = 1 },
+        CheckOldMoney = { removed = 1 },
+        CheckOwnedRemoved = { removed = 1 },
+        CheckMuseumCurator = { removed = MUSEUM_CURATOR_THRESHOLD },
+        CheckPottedHistory = { allExpansions = true },
+        CheckCurriculumVitae = { allExpansions = true },
+        CheckOldSchool = { someClassic = true },
+        CheckGladiatorGroupie = { source = "pvp", count = SOURCE_KIND_THRESHOLD },
+        CheckRaidSpectator = { source = "raid", count = SOURCE_KIND_THRESHOLD },
+        CheckBrownNoser = { source = "reputation", count = SOURCE_KIND_THRESHOLD },
+        CheckDecoratedVeteran = { source = "pvp", count = DECORATED_VETERAN_THRESHOLD },
+        CheckHowItsMade = { linkedSources = true },
+        CheckQuiteAMouthful = { textAtLeast = 25 },
+        CheckTerse = { textAtMost = 5 },
+        CheckBothEnds = { bothEnds = true },
+        CheckOwnedBothEnds = { bothEnds = true },
+        CheckDiplomaticImmunity = { bothFactions = true },
+        CheckFullLadder = { ladder = true },
+        CheckSecretKeeper = { secrets = true },
+    }
+    for name, need in pairs(fixed) do
+        if B[name] then
+            needsByCheck[B[name]] = need
+        end
+    end
+end
+
+-- What the loaded title data offers, measured once per audit.
+local function DataFacts()
+    local byID = BuildStaticMetaByID()
+    local all = {}
+    local f = { total = 0, tiers = {}, tierCount = 0, removed = 0, expansions = {}, expansionCount = 0,
+                classic = 0, prefix = 0, suffix = 0, alliance = 0, horde = 0, longest = 0, shortest = math.huge,
+                achievementLinked = 0, questLinked = 0, itemLinked = 0 }
+    for titleID, meta in pairs(byID) do
+        all[titleID] = {}
+        f.total = f.total + 1
+        local q = tonumber(meta.q)
+        if q then
+            if not f.tiers[q] then f.tierCount = f.tierCount + 1 end
+            f.tiers[q] = (f.tiers[q] or 0) + 1
+        end
+        if IsExplicitRemoved(meta) then f.removed = f.removed + 1 end
+        local exp = meta.exp
+        if exp and exp ~= "" then
+            if not f.expansions[exp] then f.expansionCount = f.expansionCount + 1 end
+            f.expansions[exp] = true
+            if tostring(exp):lower() == "classic" then f.classic = f.classic + 1 end
+        end
+        if meta.type == "prefix" then f.prefix = f.prefix + 1 elseif meta.type == "suffix" then f.suffix = f.suffix + 1 end
+        local faction = tostring(meta.faction or ""):lower()
+        if faction == "alliance" then f.alliance = f.alliance + 1 elseif faction == "horde" then f.horde = f.horde + 1 end
+        local text = CatalogueText(titleID, meta)
+        if text then
+            f.longest = math.max(f.longest, #text)
+            f.shortest = math.min(f.shortest, #text)
+        end
+        if meta.achievement_id then f.achievementLinked = f.achievementLinked + 1 end
+    end
+    for _, data in pairs(ns.EpithetData and ns.EpithetData.titles or {}) do
+        if data.quest_id then f.questLinked = f.questLinked + 1 end
+        if data.source_item and tostring(data.source_item) ~= "" then f.itemLinked = f.itemLinked + 1 end
+    end
+    -- One character can hold every title except the other faction's.
+    f.maxOwned = f.total - math.min(f.alliance, f.horde)
+    f.all = all
+    return f
+end
+
+local function JudgeNeed(need, f)
+    if need.spot and need.spot > f.total then
+        return ("needs %d titles spotted; the data has %d"):format(need.spot, f.total)
+    elseif need.own and need.own > f.maxOwned then
+        return ("needs %d titles owned; one character can hold %d"):format(need.own, f.maxOwned)
+    elseif need.tiers and f.tierCount < need.tiers then
+        return ("needs %d rarity tiers; the data has %d"):format(need.tiers, f.tierCount)
+    elseif need.tier and (f.tiers[need.tier] or 0) < need.count then
+        return ("needs %d titles of tier %d; the data has %d"):format(need.count, need.tier, f.tiers[need.tier] or 0)
+    elseif need.removed and f.removed < need.removed then
+        return ("needs %d removed titles; the data has %d"):format(need.removed, f.removed)
+    elseif need.allExpansions and f.expansionCount <= 1 then
+        return "free: the data has a single expansion, so the first title completes it"
+    elseif need.someClassic and f.classic == f.total then
+        return "free: every title is Classic"
+    elseif need.source then
+        local n = CountDistinctTitlesBySource(f.all, need.source)
+        if n < need.count then
+            return ("needs %d %s titles; the data has %d"):format(need.count, need.source, n)
+        end
+    elseif need.keyword then
+        local n = CountDistinctTitlesByTextMatch(f.all, need.keyword)
+        if n < need.count then
+            return ("needs %d titles containing \"%s\"; the data has %d"):format(need.count, need.keyword, n)
+        end
+    elseif need.titleID and not BuildStaticMetaByID()[need.titleID] then
+        return ("needs title %d, which is not in the data"):format(need.titleID)
+    elseif need.keys then
+        local titles = ns.EpithetData and ns.EpithetData.titles or {}
+        for _, key in ipairs(need.keys) do
+            if not titles[key] then
+                return ("needs the title \"%s\", which is not in the data"):format(key)
+            end
+        end
+    elseif need.kind then
+        local _, n = Achievements.B.ProgressAllOfKind(need.kind)(f.all)
+        if not n or n < 1 then
+            return ("needs %s titles; the data has none"):format(need.kind)
+        end
+    elseif need.ladder and not Achievements.B.CheckFullLadder(f.all) then
+        return "needs PvP rank titles with a readable rank; the data has none"
+    elseif need.mirror then
+        if not Achievements.B.CheckMirrorRank(need.mirror ~= "any" and need.mirror or nil)(f.all) then
+            return "needs the same PvP rank on both factions; the data has no such pair"
+        end
+    elseif need.linkedSources and (f.achievementLinked < 1 or f.questLinked < 1 or f.itemLinked < 1) then
+        return "needs titles from an achievement, a quest and an item; the data lacks one"
+    elseif need.textAtLeast and f.longest < need.textAtLeast then
+        return ("needs a title of %d+ characters; the longest is %d"):format(need.textAtLeast, f.longest)
+    elseif need.textAtMost and f.shortest > need.textAtMost then
+        return ("needs a title of %d characters or fewer; the shortest is %d"):format(need.textAtMost, f.shortest)
+    elseif need.bothEnds and (f.prefix < 1 or f.suffix < 1) then
+        return "needs both prefix and suffix titles"
+    elseif need.bothFactions and (f.alliance < 1 or f.horde < 1) then
+        return "needs titles of both factions"
+    elseif need.classes and GetClassInfo then
+        local playable = 0
+        for classID = 1, 30 do
+            local ok, name = pcall(GetClassInfo, classID)
+            if ok and name then playable = playable + 1 end
+        end
+        if playable > 0 and playable ~= need.classes then
+            return ("expects %d classes; this client has %d"):format(need.classes, playable)
+        end
+    end
+    return nil
+end
+
+-- Achievements this client's data makes impossible (or free), as a list of
+-- { id = ..., problem = "..." }. Secret Keeper is flagged when a secret it
+-- needs is. Run it after a title data update (the admin command
+-- "/epithet admin achvaudit" prints it).
+function Achievements:Audit()
+    local f = DataFacts()
+    local problems, badSecret = {}, false
+    for _, def in ipairs(Registry) do
+        local need = needsByCheck[def.check]
+        local problem = need and not need.secrets and JudgeNeed(need, f) or nil
+        if problem then
+            problems[#problems + 1] = { id = def.id, problem = problem }
+            if def.secret and not def.timeLimited and not problem:find("^free") then
+                badSecret = def.id
+            end
+        end
+    end
+    for _, def in ipairs(Registry) do
+        local need = needsByCheck[def.check]
+        if need and need.secrets and badSecret then
+            problems[#problems + 1] = { id = def.id, problem = "needs every secret, and " .. badSecret .. " cannot be earned" }
+        end
+    end
+    return problems, f
+end
+
+-- Installs the flavour's achievement set. Called once, at load, by the set
+-- file. `set` = { id = "retail-1", expected = <count>, list = { def, ... },
+-- hidden = { "id", ... } }. A def is { id, check, progress?, group, scope?,
+-- secret?, timeLimited?, icon? }. `hidden` names achievements this flavour
+-- dropped: anything already earned under them stays saved but is not shown
+-- and does not count toward Overachiever.
+function Achievements.DefineSet(set)
+    if ActiveSet then
+        error("Epithet: an achievement set is already defined (" .. tostring(ActiveSet.id) .. ")", 2)
+    end
+    local list = set and set.list or {}
+    for i, def in ipairs(list) do
+        if type(def.id) ~= "string" or type(def.check) ~= "function" then
+            error("Epithet: achievement set entry " .. i .. " needs an id and a check", 2)
+        end
+        if RegistryByID[def.id] then
+            error("Epithet: duplicate achievement id " .. def.id, 2)
+        end
+        Registry[#Registry + 1] = def
+        RegistryByID[def.id] = def
+    end
+    local hiddenByID = {}
+    for _, id in ipairs(set.hidden or {}) do
+        if RegistryByID[id] then
+            error("Epithet: achievement " .. id .. " is both listed and hidden", 2)
+        end
+        hiddenByID[id] = true
+    end
+    ActiveSet = { id = set.id, expected = set.expected or #Registry, hiddenByID = hiddenByID }
+end
+
+function Achievements:GetSetID()
+    return ActiveSet and ActiveSet.id or nil
+end
+
 
 local function LocaleName(id)
     return (L and L["SPOT_ACHV_NAME_" .. string.upper(id)]) or id
@@ -1749,9 +2501,15 @@ local function DetailText(id, detail)
         return (L and L["SPOT_ACHV_DETAIL_CLASSES_FMT"] and string.format(L["SPOT_ACHV_DETAIL_CLASSES_FMT"], detail)) or ("earned across " .. detail .. " classes")
     elseif id == "capital_offence" then
         return (L and L["SPOT_ACHV_DETAIL_ZONE_FMT"] and string.format(L["SPOT_ACHV_DETAIL_ZONE_FMT"], detail)) or ("earned in " .. detail)
+    elseif id == "keeping_up_with_the_joneses" then
+        return (L and L["SPOT_ACHV_DETAIL_FAMILY_FMT"] and string.format(L["SPOT_ACHV_DETAIL_FAMILY_FMT"], detail)) or ("the " .. detail .. " family")
+    elseif id == "mirror_image" then
+        return (L and L["SPOT_ACHV_DETAIL_RANK_FMT"] and string.format(L["SPOT_ACHV_DETAIL_RANK_FMT"], detail)) or ("rank " .. detail)
     elseif id == "old_money" or id == "takes_one" or id == "window_shopper" or id == "small_world" or id == "impulse_purchase" or id == "twinsies"
         or id == "quite_a_mouthful" or id == "terse" or id == "double_take" or id == "restraining_order"
-        or id == "beyond_the_grave" or id == "know_thy_enemy" then
+        or id == "beyond_the_grave" or id == "know_thy_enemy"
+        or id == "family_business" or id == "first_wave"
+        or id == "position_in_queue" or id == "forever_young" or id == "head_in_the_clouds" then
         return (L and L["SPOT_ACHV_DETAIL_TITLE_FMT"] and string.format(L["SPOT_ACHV_DETAIL_TITLE_FMT"], detail)) or ("triggered by " .. detail)
     elseif id == "potted_history" then
         return (L and L["SPOT_ACHV_DETAIL_EXPANSIONS_FMT"] and string.format(L["SPOT_ACHV_DETAIL_EXPANSIONS_FMT"], detail)) or ("earned across " .. detail .. " expansions")
@@ -1972,12 +2730,12 @@ function Achievements:EnsureAlertFrame()
 
     local owner = self
     local T = ns.Theme
-    local col = (T and T.col) or {}
-    local gold = col.gold or { r = 0.91, g = 0.78, b = 0.45 }
-    local goldBright = col.goldBright or { r = 0.96, g = 0.89, b = 0.65 }
-    local goldDim = col.goldDim or { r = 0.60, g = 0.48, b = 0.25 }
-    local panelBg = col.panel2 or { r = 0.08, g = 0.06, b = 0.03 }
-    local muted = col.muted or { r = 0.61, g = 0.55, b = 0.42 }
+    local col = T.col
+    local gold = col.gold
+    local goldBright = col.goldBright
+    local goldDim = col.goldDim
+    local panelBg = col.panel2
+    local muted = col.muted
 
     local frame = CreateFrame("Frame", "EpithetSpottingAchievementAlert", UIParent, "BackdropTemplate")
     frame:SetSize(ALERT_WIDTH, 80)
@@ -2425,11 +3183,12 @@ function Achievements:FlushAlertsIfReady()
 end
 
 function Achievements:TriggerAdminTestAlert()
-    if #Registry ~= EXPECTED_ACHIEVEMENT_TOTAL then
+    local expected = ActiveSet and ActiveSet.expected or 0
+    if #Registry ~= expected or expected == 0 then
         return false, string.format(
             "Achievement registry mismatch (%d/%d). Admin test cancelled.",
             #Registry,
-            EXPECTED_ACHIEVEMENT_TOTAL
+            expected
         )
     end
 
@@ -2625,12 +3384,17 @@ function Achievements:Init()
     self.alertBusy = false
     self.deferPresentationUntil = nil
 
-    if #Registry ~= EXPECTED_ACHIEVEMENT_TOTAL and ns.Print then
+    if not ActiveSet then
+        if ns.Print then ns.Print((L and L["SPOT_ACHV_NO_SET"]) or "No achievement set is loaded for this version of the game.") end
+    elseif #Registry ~= ActiveSet.expected and ns.Print then
         ns.Print(string.format(
             "Achievement registry count mismatch: %d (expected %d).",
             #Registry,
-            EXPECTED_ACHIEVEMENT_TOTAL
+            ActiveSet.expected
         ))
+    end
+    if ActiveSet then
+        EnsureRootDB().achievementSet = ActiveSet.id
     end
 
     self.frame = CreateFrame("Frame")

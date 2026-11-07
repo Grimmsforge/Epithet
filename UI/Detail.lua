@@ -21,10 +21,10 @@ local RARITY_GEMS = T and T.RarityGems32
 local DOT  = "\194\183"        -- middle dot ·
 local STAR = "\226\152\133"    -- star ★
 
-local col  = T and T.col or {}
-local GOLD     = col.gold    or { r = 0.91, g = 0.78, b = 0.45 }
-local GOLD_DIM = col.goldDim or { r = 0.73, g = 0.57, b = 0.25 }
-local MUTED    = col.muted   or { r = 0.61, g = 0.55, b = 0.42 }
+local col  = T.col
+local GOLD     = col.gold
+local GOLD_DIM = col.goldDim
+local MUTED    = col.muted
 
 local INSET = 16
 
@@ -49,12 +49,12 @@ local scratchParts = {}
 local NEVER_REFRESHED = {}
 
 -- Unobtainability icons (16px for detail panel banner)
-local UNOBTAIN_SEALED_16    = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-unobtainable-sealed-16"
-local UNOBTAIN_HOURGLASS_16 = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-unobtainable-hourglass-16"
+local UNOBTAIN_SEALED_16    = T.tex.unobtainable
+local UNOBTAIN_HOURGLASS_16 = T.tex.timeSensitive
 
 -- Faction icons (64px for detail panel — sharper at display size)
-local FACTION_ALLIANCE_64 = "Interface\\AddOns\\Epithet\\icons\\ui\\alliance-logo-white"
-local FACTION_HORDE_64    = "Interface\\AddOns\\Epithet\\icons\\ui\\horde-logo-white"
+local FACTION_ALLIANCE_64 = T.tex.alliance
+local FACTION_HORDE_64    = T.tex.horde
 
 -- Single-letter / glyph sigil per source kind (fallback if texture missing)
 local SIGIL_LETTERS = {
@@ -69,18 +69,18 @@ local SIGIL_LETTERS = {
 
 -- Category icon textures keyed by source kind
 local SIGIL_ICONS = {
-    ["Achievement"]      = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-achievement-32",
-    ["Quest"]            = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-quest-32",
-    ["Reputation"]       = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-reputation-32",
-    ["PvP Rank"]         = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-pvp-32",
-    ["Feat of Strength"] = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-feat-32",
-    ["Raid"]             = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-raid-32",
-    ["Dungeon"]          = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-dungeon-32",
-    ["Exploration"]      = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-exploration-32",
-    ["Holiday"]          = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-holiday-32",
-    ["Profession"]       = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-profession-32",
-    ["Campaign"]         = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-campaign-32",
-    ["Outdoor"]          = "Interface\\AddOns\\Epithet\\icons\\category\\epithet-cat-outdoor-32",
+    ["Achievement"]      = T.tex.catAchievement,
+    ["Quest"]            = T.tex.catQuest,
+    ["Reputation"]       = T.tex.catReputation,
+    ["PvP Rank"]         = T.tex.catPvp,
+    ["Feat of Strength"] = T.tex.catFeat,
+    ["Raid"]             = T.tex.catRaid,
+    ["Dungeon"]          = T.tex.catDungeon,
+    ["Exploration"]      = T.tex.catExploration,
+    ["Holiday"]          = T.tex.catHoliday,
+    ["Profession"]       = T.tex.catProfession,
+    ["Campaign"]         = T.tex.catCampaign,
+    ["Outdoor"]          = T.tex.catOutdoor,
 }
 
 -- ---------------------------------------------------------------------------
@@ -196,12 +196,12 @@ function Detail:InitRarityInfoButton(card)
     -- Circular background
     local bg = btn:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.18, 0.15, 0.10, 0.9)
+    bg:SetColorTexture(T.RGBA(T.col.infoBtnBg, 0.9))
     btn.bg = bg
 
     -- Round mask (via SetMask on the bg)
     bg:SetTexture("Interface\\COMMON\\common-roundhighlight")
-    bg:SetVertexColor(0.18, 0.15, 0.10, 0.9)
+    bg:SetVertexColor(T.RGBA(T.col.infoBtnBg, 0.9))
 
     -- Question-mark label
     local qm = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -211,11 +211,11 @@ function Detail:InitRarityInfoButton(card)
     btn.label = qm
 
     btn:SetScript("OnEnter", function(self_)
-        self_.bg:SetVertexColor(0.28, 0.23, 0.14, 1.0)
-        self_.label:SetTextColor(1, 0.92, 0.6)
+        self_.bg:SetVertexColor(T.RGBA(T.col.infoBtnBgHover))
+        self_.label:SetTextColor(T.RGBA(T.col.textHover))
     end)
     btn:SetScript("OnLeave", function(self_)
-        self_.bg:SetVertexColor(0.18, 0.15, 0.10, 0.9)
+        self_.bg:SetVertexColor(T.RGBA(T.col.infoBtnBg, 0.9))
         self_.label:SetTextColor(GOLD.r, GOLD.g, GOLD.b)
     end)
     btn:SetScript("OnClick", function() self:ToggleRarityModal() end)
@@ -230,8 +230,8 @@ function Detail:InitRarityInfoButton(card)
         edgeFile = "Interface\\Buttons\\WHITE8x8",
         edgeSize = 1,
     })
-    modal:SetBackdropColor(0.08, 0.06, 0.03, 0.95)
-    modal:SetBackdropBorderColor(0.49, 0.37, 0.15, 1.0)
+    modal:SetBackdropColor(T.RGBA(T.col.surface, 0.95))
+    modal:SetBackdropBorderColor(T.RGBA(T.col.goldDeep))
     modal:SetFrameStrata("DIALOG")
     modal:Hide()
     self.rarityModal = modal
@@ -314,7 +314,7 @@ function Detail:InitSourceCard()
     local sigilBG = content:CreateTexture(nil, "ARTWORK")
     sigilBG:SetSize(34, 34)
     sigilBG:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -10)
-    sigilBG:SetColorTexture(0.12, 0.10, 0.06, 0.8)
+    sigilBG:SetColorTexture(T.RGBA(T.col.sigilBg, 0.8))
     self.sigilBG = sigilBG
 
     local sigil = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -349,7 +349,7 @@ function Detail:InitSourceCard()
     linkText:SetJustifyH("LEFT")
     linkText:SetTextColor(GOLD.r, GOLD.g, GOLD.b)
     sourceLink.text = linkText
-    sourceLink:SetScript("OnEnter", function() linkText:SetTextColor(1, 0.92, 0.6) end)
+    sourceLink:SetScript("OnEnter", function() linkText:SetTextColor(T.RGBA(T.col.textHover)) end)
     sourceLink:SetScript("OnLeave", function() linkText:SetTextColor(GOLD.r, GOLD.g, GOLD.b) end)
     sourceLink:SetScript("OnClick", function() self:OnSourceLinkClick() end)
     self.sourceLink = sourceLink
@@ -357,7 +357,7 @@ function Detail:InitSourceCard()
     local desc = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     desc:SetPoint("TOPLEFT", sigilBG, "BOTTOMLEFT", 0, -12)
     desc:SetJustifyH("LEFT")
-    desc:SetTextColor(0.78, 0.74, 0.66)
+    desc:SetTextColor(T.RGBA(T.col.bodyText))
     desc:SetSpacing(2)
     self.descText = desc
 
@@ -382,7 +382,7 @@ function Detail:InitSourceCard()
     local obtainReason = content:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
     obtainReason:SetPoint("TOPLEFT", obtainRow, "BOTTOMLEFT", 22, -4)
     obtainReason:SetJustifyH("LEFT")
-    obtainReason:SetTextColor(0.58, 0.52, 0.42)
+    obtainReason:SetTextColor(T.RGBA(T.col.noteText))
     obtainReason:SetSpacing(2)
     obtainReason:Hide()
     self.obtainReason = obtainReason
@@ -413,7 +413,7 @@ function Detail:InitSourceScrollBar(card)
     track:SetWidth(SCROLLBAR_WIDTH)
     track:SetPoint("TOPRIGHT", -6, -12)
     track:SetPoint("BOTTOMRIGHT", -6, 12)
-    track:SetColorTexture(0.16, 0.13, 0.08, 0.7)
+    track:SetColorTexture(T.RGBA(T.col.detailTrack, 0.7))
     track:Hide()
     self.sourceScrollTrack = track
 
@@ -612,7 +612,7 @@ function Detail:InitActionFooter()
     note:SetPoint("BOTTOMLEFT", INSET, 16)
     note:SetPoint("RIGHT", panel, "RIGHT", -INSET, 0)
     note:SetJustifyH("CENTER")
-    note:SetTextColor(0.42, 0.38, 0.29)
+    note:SetTextColor(T.RGBA(T.col.faint))
     self.actionNote = note
 
     -- Custom gold-bordered dark button (Set as Title)
@@ -621,68 +621,23 @@ function Detail:InitActionFooter()
     button:SetPoint("BOTTOMLEFT", note, "TOPLEFT", 0, 9)
     button:SetPoint("RIGHT", panel, "RIGHT", -INSET, 0)
 
-    -- Background (dark gradient approximation)
-    local bg = button:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-    button.bg = bg
-
-    -- Border (4 edges, gold-deep)
-    local borderTop = button:CreateTexture(nil, "BORDER")
-    borderTop:SetHeight(1)
-    borderTop:SetPoint("TOPLEFT")
-    borderTop:SetPoint("TOPRIGHT")
-    borderTop:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local borderBot = button:CreateTexture(nil, "BORDER")
-    borderBot:SetHeight(1)
-    borderBot:SetPoint("BOTTOMLEFT")
-    borderBot:SetPoint("BOTTOMRIGHT")
-    borderBot:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local borderL = button:CreateTexture(nil, "BORDER")
-    borderL:SetWidth(1)
-    borderL:SetPoint("TOPLEFT")
-    borderL:SetPoint("BOTTOMLEFT")
-    borderL:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local borderR = button:CreateTexture(nil, "BORDER")
-    borderR:SetWidth(1)
-    borderR:SetPoint("TOPRIGHT")
-    borderR:SetPoint("BOTTOMRIGHT")
-    borderR:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    button.borders = { borderTop, borderBot, borderL, borderR }
-
     -- Text
     local text = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("CENTER", 8, 0)
-    text:SetTextColor(GOLD.r, GOLD.g, GOLD.b)
     button.text = text
 
     -- Banner mark icon (shown when title is active)
     local tick = button:CreateTexture(nil, "OVERLAY")
     tick:SetSize(34, 34)
     tick:SetPoint("RIGHT", text, "LEFT", -4, 0)
-    tick:SetTexture("Interface\\AddOns\\Epithet\\icons\\logo\\epithet-banner-mark-64")
+    tick:SetTexture(T.tex.logoBannerMark)
     tick:Hide()
     button.tick = tick
 
-    -- Hover effects
-    button:SetScript("OnEnter", function(self_)
-        if self_:IsEnabled() then
-            self_.bg:SetColorTexture(0.16, 0.12, 0.07, 1.0)
-            self_.text:SetTextColor(0.96, 0.89, 0.65)
-            for _, b in ipairs(self_.borders) do
-                b:SetColorTexture(0.91, 0.78, 0.45, 1.0)
-            end
-        end
-    end)
-    button:SetScript("OnLeave", function(self_)
-        if self_:IsEnabled() then
-            self_.bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-            self_.text:SetTextColor(GOLD.r, GOLD.g, GOLD.b)
-            for _, b in ipairs(self_.borders) do
-                b:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-            end
-        end
-    end)
+    -- Shared bordered button. RefreshActionButton switches it between "idle"
+    -- (earned: Set as title), "active" (current title: gold fill) and
+    -- "disabled" (locked); only "idle" reacts to hover.
+    T.SkinButton(button, T.ButtonLooks.standard)
     button:SetScript("OnClick", function() self:OnActionClick() end)
 
     -- Custom SetText / Enable / Disable
@@ -699,26 +654,6 @@ function Detail:InitActionFooter()
     favBtn:SetPoint("BOTTOMLEFT", button, "TOPLEFT", 0, 8)
     favBtn:SetPoint("RIGHT", panel, "RIGHT", -INSET, 0)
 
-    local favBg = favBtn:CreateTexture(nil, "BACKGROUND")
-    favBg:SetAllPoints()
-    favBg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-    favBtn.bg = favBg
-
-    -- Border (4 edges)
-    local fbTop = favBtn:CreateTexture(nil, "BORDER")
-    fbTop:SetHeight(1); fbTop:SetPoint("TOPLEFT"); fbTop:SetPoint("TOPRIGHT")
-    fbTop:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local fbBot = favBtn:CreateTexture(nil, "BORDER")
-    fbBot:SetHeight(1); fbBot:SetPoint("BOTTOMLEFT"); fbBot:SetPoint("BOTTOMRIGHT")
-    fbBot:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local fbL = favBtn:CreateTexture(nil, "BORDER")
-    fbL:SetWidth(1); fbL:SetPoint("TOPLEFT"); fbL:SetPoint("BOTTOMLEFT")
-    fbL:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    local fbR = favBtn:CreateTexture(nil, "BORDER")
-    fbR:SetWidth(1); fbR:SetPoint("TOPRIGHT"); fbR:SetPoint("BOTTOMRIGHT")
-    fbR:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-    favBtn.borders = { fbTop, fbBot, fbL, fbR }
-
     -- Content container (centers icon + label as a group)
     local content = CreateFrame("Frame", nil, favBtn)
     content:SetPoint("CENTER")
@@ -729,7 +664,7 @@ function Detail:InitActionFooter()
     local favIcon = content:CreateTexture(nil, "OVERLAY")
     favIcon:SetSize(14, 14)
     favIcon:SetPoint("LEFT", 0, 0)
-    favIcon:SetTexture("Interface\\AddOns\\Epithet\\icons\\ui\\star")
+    favIcon:SetTexture(T.tex.star)
     favBtn.icon = favIcon
 
     -- Label
@@ -737,19 +672,12 @@ function Detail:InitActionFooter()
     favText:SetPoint("LEFT", favIcon, "RIGHT", 6, 0)
     favBtn.text = favText
 
-    -- Hover
-    favBtn:SetScript("OnEnter", function(self_)
-        self_.bg:SetColorTexture(0.16, 0.12, 0.07, 1.0)
-        for _, b in ipairs(self_.borders) do
-            b:SetColorTexture(0.91, 0.78, 0.45, 1.0)
-        end
-    end)
-    favBtn:SetScript("OnLeave", function(self_)
-        self_.bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-        for _, b in ipairs(self_.borders) do
-            b:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-        end
-    end)
+    -- Shared bordered button; its star and label colours follow the favourite
+    -- state (RefreshFavButton), so the looks leave them alone.
+    T.SkinButton(favBtn, T.ButtonVariant(T.ButtonLooks.standard, {
+        idle  = { text = false },
+        hover = { text = false },
+    }))
     favBtn:SetScript("OnClick", function() self:OnFavouriteClick() end)
 
     self.favButton = favBtn
@@ -854,7 +782,7 @@ function Detail:RefreshRarityCard(record)
             local c = tqi and tqi.pip or ns.QUALITY_COLOURS[q].pip
             seg:SetColorTexture(c.r, c.g, c.b, 1.0)
         else
-            seg:SetColorTexture(0.30, 0.27, 0.21, 0.6)
+            seg:SetColorTexture(T.RGBA(T.col.tierEmpty, 0.6))
         end
     end
 
@@ -875,11 +803,11 @@ function Detail:RefreshRarityCard(record)
     local faction = record.faction
     if faction == "Alliance" then
         self.factionIcon:SetTexture(FACTION_ALLIANCE_64)
-        self.factionIcon:SetVertexColor(0.91, 0.78, 0.45, 1.0)
+        self.factionIcon:SetVertexColor(T.RGBA(T.col.alliance))
         self.factionIcon:Show()
     elseif faction == "Horde" then
         self.factionIcon:SetTexture(FACTION_HORDE_64)
-        self.factionIcon:SetVertexColor(0.85, 0.20, 0.20, 1.0)
+        self.factionIcon:SetVertexColor(T.RGBA(T.col.horde))
         self.factionIcon:Show()
     else
         self.factionIcon:Hide()
@@ -941,15 +869,15 @@ function Detail:RefreshSourceCard(record)
     local obt = record.obtainable
     if obt == "no" then
         self.obtainIcon:SetTexture(UNOBTAIN_SEALED_16)
-        self.obtainIcon:SetVertexColor(0.85, 0.35, 0.30, 1.0)
+        self.obtainIcon:SetVertexColor(T.RGBA(T.col.unobtainable))
         self.obtainLabel:SetText(L["NO_LONGER_OBTAINABLE"])
-        self.obtainLabel:SetTextColor(0.85, 0.35, 0.30)
+        self.obtainLabel:SetTextColor(T.RGBA(T.col.unobtainable))
         self.obtainRow:Show()
     elseif obt == "feat" then
         self.obtainIcon:SetTexture(UNOBTAIN_HOURGLASS_16)
-        self.obtainIcon:SetVertexColor(0.90, 0.70, 0.25, 1.0)
+        self.obtainIcon:SetVertexColor(T.RGBA(T.col.timeSensitive))
         self.obtainLabel:SetText(L["FEAT_OF_STRENGTH"])
-        self.obtainLabel:SetTextColor(0.90, 0.70, 0.25)
+        self.obtainLabel:SetTextColor(T.RGBA(T.col.timeSensitive))
         self.obtainRow:Show()
     else
         self.obtainRow:Hide()
@@ -966,9 +894,9 @@ function Detail:RefreshSourceCard(record)
     end
 
     -- Meta grid (key-value rows with colour codes from Theme)
-    local FAINT = T and ("|cff" .. T.col.faint.hex) or "|cff6b6049"
-    local TEXT  = T and ("|cff" .. T.col.text.hex) or "|cffe7dcc4"
-    local WARN  = T and ("|cff" .. T.col.warn.hex) or "|cffd98a52"
+    local FAINT = "|cff" .. T.col.faint.hex
+    local TEXT  = "|cff" .. T.col.text.hex
+    local WARN  = "|cff" .. T.col.warn.hex
     local lines = {}
 
     if record.exp then
@@ -1004,11 +932,11 @@ function Detail:RefreshSourceCard(record)
         lines[#lines + 1] = FAINT .. L["FACTION"] .. "|r " .. TEXT .. factionLabel .. "|r"
     end
     if record.earned and record.date then
-        local dateHex = T and ("|cff" .. T.quality[5].text.hex) or "|cffffa334"
+        local dateHex = "|cff" .. T.quality[5].text.hex
         lines[#lines + 1] = ""
         lines[#lines + 1] = FAINT .. L["EARNED_LABEL"] .. "|r " .. dateHex .. string.format(L["EARNED_DATE"], record.date) .. "|r"
     elseif not record.earned then
-        local lockHex = T and ("|cff" .. T.col.locked.hex) or "|cff5d5443"
+        local lockHex = "|cff" .. T.col.locked.hex
         lines[#lines + 1] = ""
         lines[#lines + 1] = FAINT .. L["STATUS_LABEL"] .. "|r " .. lockHex .. L["NOT_YET_EARNED"] .. "|r"
     end
@@ -1040,42 +968,24 @@ end
 
 function Detail:RefreshActionButton(record)
     local btn = self.actionButton
-    local goldCol = T and T.col.gold or GOLD
-    local inkCol  = T and T.col.ink or { r = 0.05, g = 0.04, b = 0.02 }
-    local deepCol = T and T.col.goldDeep or { r = 0.49, g = 0.37, b = 0.15 }
 
     if record.isActive then
         btn:SetText(L["CURRENT_TITLE"])
         btn:Disable()
         btn.tick:Show()
-        -- Active state: gold fill, dark text
-        btn.bg:SetColorTexture(goldCol.r, goldCol.g, goldCol.b, 1.0)
-        btn.text:SetTextColor(inkCol.r, inkCol.g, inkCol.b)
-        for _, b in ipairs(btn.borders) do
-            b:SetColorTexture(goldCol.r, goldCol.g, goldCol.b, 1.0)
-        end
+        btn:SetLook("active")      -- gold fill, dark text
         self.actionNote:SetText(L["CURRENT_NOTE"])
     elseif record.earned then
         btn:SetText(L["SET_AS_MY_TITLE"])
         btn:Enable()
         btn.tick:Hide()
-        -- Normal enabled state
-        btn.bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-        btn.text:SetTextColor(goldCol.r, goldCol.g, goldCol.b)
-        for _, b in ipairs(btn.borders) do
-            b:SetColorTexture(deepCol.r, deepCol.g, deepCol.b, 1.0)
-        end
+        btn:SetLook("idle")
         self.actionNote:SetText(L["SET_NOTE"])
     else
         btn:SetText(L["LOCKED_BUTTON"])
         btn:Disable()
         btn.tick:Hide()
-        -- Disabled/locked state
-        btn.bg:SetColorTexture(0.07, 0.05, 0.03, 1.0)
-        btn.text:SetTextColor(0.36, 0.33, 0.27)
-        for _, b in ipairs(btn.borders) do
-            b:SetColorTexture(0.20, 0.16, 0.10, 1.0)
-        end
+        btn:SetLook("disabled")
         self.actionNote:SetText(L["LOCKED_NOTE"])
     end
     btn.record = record
@@ -1196,11 +1106,11 @@ function Detail:RefreshFavButton(record)
     local isFav = favs and favs[key] or false
 
     if isFav then
-        btn.icon:SetVertexColor(0.91, 0.78, 0.45, 1.0)
+        btn.icon:SetVertexColor(T.RGBA(T.col.gold))
         btn.text:SetText(L["REMOVE_FAVOURITE"] or "Remove from Favourites")
         btn.text:SetTextColor(GOLD.r, GOLD.g, GOLD.b)
     else
-        btn.icon:SetVertexColor(0.40, 0.36, 0.28, 0.6)
+        btn.icon:SetVertexColor(T.RGBA(T.col.iconDisabled, 0.6))
         btn.text:SetText(L["ADD_FAVOURITE"] or "Add to Favourites")
         btn.text:SetTextColor(MUTED.r, MUTED.g, MUTED.b)
     end

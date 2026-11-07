@@ -4,7 +4,10 @@
 -- =============================================================================
 local _, ns = ...
 
--- Bridge global EpithetData (set by data/TitlesDB.enGB.lua) into the addon namespace
+-- Bridge global EpithetData into the addon namespace. It is set by exactly one
+-- flavour's base: data/retail/TitlesDB.enGB.lua on Retail and PTR, or
+-- data/forever/TitlesDB.enGB.lua on WoW Forever (the TOC gates them by game
+-- type). The shape is identical, so nothing below needs to know which loaded.
 ns.EpithetData = EpithetData
 
 -- ---------------------------------------------------------------------------
@@ -40,10 +43,97 @@ if ns.EpithetData then
 end
 
 -- ---------------------------------------------------------------------------
+-- Faction variants of one title text
+-- ---------------------------------------------------------------------------
+-- The client can give one title text several IDs that differ only by faction:
+-- WoW Forever's "Sergeant" is 10 (Alliance) and 23 (Horde). The collector ships
+-- each such ID as its own entry, the first under its text and the rest under
+-- "<text>#<titleID>", with `text` always holding the real title text. Those
+-- entries are what this index is built from, so it only ever reflects what the
+-- loaded data declares; a dataset that ships one entry per text yields nothing.
+--
+-- factionVariants["<lower text>|<type>"] = { Alliance = entry, Horde = entry, [""] = entry }
+-- exists only for a text+affix whose entries carry more than one distinct
+-- faction ("" stands for neutral). Same-faction duplicates are not split: they
+-- are indistinguishable to the player, which is what deduplication is for.
+local function VariantGroupKey(text, titleType)
+    return strlower(text or "") .. "|" .. (titleType or "")
+end
+
+local function BuildFactionVariants()
+    local groups = {}
+    if ns.EpithetData and ns.EpithetData.titles then
+        for _, entry in pairs(ns.EpithetData.titles) do
+            if entry.text and entry.titleID then
+                local key = VariantGroupKey(entry.text, entry.type)
+                local group = groups[key]
+                if not group then
+                    group = {}
+                    groups[key] = group
+                end
+                group[#group + 1] = entry
+            end
+        end
+    end
+
+    local split = {}
+    for key, group in pairs(groups) do
+        if #group > 1 then
+            local byFaction, factionCount = {}, 0
+            for _, entry in ipairs(group) do
+                local faction = entry.faction or ""
+                local current = byFaction[faction]
+                if not current then
+                    factionCount = factionCount + 1
+                end
+                -- Lowest titleID wins within a faction, so the pick never depends
+                -- on pairs() order.
+                if not current or entry.titleID < current.titleID then
+                    byFaction[faction] = entry
+                end
+            end
+            if factionCount > 1 then
+                split[key] = byFaction
+            end
+        end
+    end
+    return split
+end
+local factionVariants = BuildFactionVariants()
+
+-- The faction variants `entry` belongs to, or nil when its text+affix has none.
+local function GetFactionVariants(entry)
+    if not entry or not entry.text then return nil end
+    return factionVariants[VariantGroupKey(entry.text, entry.type)]
+end
+
+-- Given a DB entry resolved from title text alone (which cannot tell the
+-- Alliance and Horde variants apart), return the variant matching `faction`
+-- ("Alliance" / "Horde"). Returns `entry` unchanged when it has no faction
+-- variants or `faction` is unknown, so it is a no-op on any dataset without them.
+function ns.PickFactionVariant(entry, faction)
+    local variants = GetFactionVariants(entry)
+    if not variants or not faction then return entry end
+    return variants[faction] or entry
+end
+
+-- UnitFactionGroup for a unit, or nil when unavailable. Under combat taint unit
+-- APIs can return secret values, which must never be compared or branched on.
+local issecretvalue = _G.issecretvalue
+function ns.SafeUnitFaction(unit)
+    if not unit or not UnitFactionGroup then return nil end
+    local ok, faction = pcall(UnitFactionGroup, unit)
+    if not ok or faction == nil then return nil end
+    if issecretvalue and issecretvalue(faction) then return nil end
+    if type(faction) ~= "string" then return nil end
+    return faction
+end
+
+-- ---------------------------------------------------------------------------
 -- Localised title-database overlays
 -- ---------------------------------------------------------------------------
 -- The enGB base above ships the full dataset. Localised databases
--- (data/TitlesDB.<code>.lua) are SPARSE overlays keyed by titleID — the stable,
+-- (data/<flavour>/TitlesDB.<code>.lua) are SPARSE overlays keyed by titleID — the stable,
 -- locale-independent join key — that carry only translated free-prose fields
 -- (obtainability_reason, achievement/quest/source_item). Each registers itself:
 --
@@ -72,6 +162,7 @@ local IsTitleKnown   = IsTitleKnown
 local GetCurrentTitle = GetCurrentTitle
 local GetNumTitles   = GetNumTitles
 local UnitName       = UnitName
+local UnitPVPName    = UnitPVPName
 local GetNormalizedRealmName = GetNormalizedRealmName
 local GetAchievementInfo     = GetAchievementInfo
 
@@ -84,16 +175,43 @@ local TitleData = {}
 ns.TitleData = TitleData
 TitleData.dirty = true  -- ensure first Scan() always runs
 
+-- The player's name as the game shows it, without the title. On WoW Forever a
+-- character has a first and a last name and UnitName returns only the first;
+-- the displayed name (UnitPVPName) carries both, so the title is read off it
+-- with the same rule the nameplates use (TitleIndex:ReadTitle). On Retail the
+-- result is exactly UnitName. Returns nil when the displayed name can't be
+-- trusted yet (not loaded, or still showing the previous title), so callers
+-- keep their last good read.
+local function ReadPlayerName(currentTitleID)
+    local first = UnitName and UnitName("player")
+    if type(first) ~= "string" or first == "" then return nil end
+    local shown = UnitPVPName and UnitPVPName("player")
+    if issecretvalue and issecretvalue(shown) then return nil end
+    if type(shown) ~= "string" or not shown:find(first, 1, true) then return nil end
+    if currentTitleID and currentTitleID > 0 then
+        local index = ns.TitleIndex
+        if not (index and index.ReadTitle) then return nil end
+        local affix, text = index:ReadTitle({ shown }, first)
+        if not text or text == "" then return nil end
+        if affix == "prefix" and shown:sub(1, #text) == text then
+            shown = shown:sub(#text + 1)
+        elseif affix == "suffix" and shown:sub(-#text) == text then
+            shown = shown:sub(1, #shown - #text):gsub("[,%s]+$", "")
+        else
+            return nil
+        end
+    end
+    shown = shown:gsub("^%s+", ""):gsub("%s+$", "")
+    if not shown:find(first, 1, true) then return nil end
+    return shown
+end
+
 -- ---------------------------------------------------------------------------
 -- Rarity / quality colours (pip hex = true item colour; text = on-dark variant)
 -- ---------------------------------------------------------------------------
-ns.QUALITY_COLOURS = {
-    [1] = { pip = { r = 1.00, g = 1.00, b = 1.00 }, text = { r = 0.95, g = 0.93, b = 0.89 } }, -- Common
-    [2] = { pip = { r = 0.12, g = 1.00, b = 0.00 }, text = { r = 0.37, g = 0.89, b = 0.29 } }, -- Uncommon
-    [3] = { pip = { r = 0.00, g = 0.44, b = 0.87 }, text = { r = 0.31, g = 0.64, b = 1.00 } }, -- Rare
-    [4] = { pip = { r = 0.64, g = 0.21, b = 0.93 }, text = { r = 0.79, g = 0.55, b = 1.00 } }, -- Epic
-    [5] = { pip = { r = 1.00, g = 0.50, b = 0.00 }, text = { r = 1.00, g = 0.64, b = 0.20 } }, -- Legendary
-}
+-- The same tables as ns.Theme.quality, so there is one quality palette and a
+-- flavour's theme overrides reach both names.
+ns.QUALITY_COLOURS = ns.Theme.quality
 
 -- Rarity tier names (indexed 1..5). Resolved through ns.L at ACCESS time so they
 -- follow the active locale, with the usual English fallback. Kept as a table (not
@@ -159,6 +277,7 @@ local KIND_LABEL_KEYS = {
     ["PvP Rank"] = "KIND_PVP_RANK",
     Item = "KIND_ITEM",
     Promotion = "KIND_PROMOTION",
+    Profession = "KIND_PROFESSION",
 }
 function ns.KindLabel(code)
     if not code or code == "" then return code end
@@ -172,16 +291,21 @@ for i, key in ipairs(ns.EXPANSION_ORDER) do
 end
 
 -- ---------------------------------------------------------------------------
--- Blizzard ships unnamed placeholder titles as the literal text "[PH]" (IDs
--- 660-663 at time of writing). They are not real titles and are excluded from
--- the bundled database, so exclude them from the scan too — otherwise they show
--- up as metadata-less rows in the list and inflate both the title count and the
--- obtainable-progress denominator. Matched exactly; anything looser risks
--- swallowing a genuine title.
+-- Blizzard ships unnamed placeholder titles as the literal text "[PH]" (Retail
+-- IDs 660-663 at time of writing) and dev-only ones marked "[DNT]" ("do not
+-- translate"; WoW Forever ID 36 is "[DNT] Test"). They are not real titles and
+-- are excluded from the bundled database, so exclude them from the scan too —
+-- otherwise they show up as metadata-less rows in the list and inflate both the
+-- title count and the obtainable-progress denominator. Mirrors the collector's
+-- rule, ^\s*(?:\[ph\]\s*$|\[dnt\]) case-insensitive: "[PH]" must be the whole
+-- text (anything looser risks swallowing a genuine title), while "[DNT]" only
+-- has to lead it.
 -- ---------------------------------------------------------------------------
 local function IsPlaceholderTitle(text)
     if not text then return false end
-    return strlower(text):match("^%s*%[ph%]%s*$") ~= nil
+    local lower = strlower(text)
+    return lower:match("^%s*%[ph%]%s*$") ~= nil
+        or lower:match("^%s*%[dnt%]") ~= nil
 end
 
 -- ---------------------------------------------------------------------------
@@ -254,8 +378,22 @@ end
 -- affix ("the Forbidden" is 495 suffix / 533 prefix) the type still separates
 -- them, and two titles sharing both text and affix are indistinguishable to the
 -- player anyway, which is precisely what collapsing them is for.
-local function BuildRecordDedupeKey(record)
-    return strlower(record.text or "") .. "|" .. (record.type or "")
+--
+-- The one exception is a title the DB itself ships as separate faction variants
+-- (see factionVariants above; WoW Forever's Alliance "Sergeant" 10 and Horde
+-- "Sergeant" 23). Those are different titles to the player, so the variant's
+-- faction joins the key and each keeps its own row. This does not reopen the
+-- failure described above: every variant is its own DB entry, so each of its
+-- IDs resolves through the titleID index on any client locale. It relies on the
+-- collector shipping every ID of a split title; an ID it left out would resolve
+-- by English text only and could land in the wrong row on other locales.
+-- `static` is the DB entry this record resolved to (nil when it has none).
+local function BuildRecordDedupeKey(record, static)
+    local key = strlower(record.text or "") .. "|" .. (record.type or "")
+    if GetFactionVariants(static) then
+        key = key .. "|" .. (static.faction or "")
+    end
+    return key
 end
 
 -- ---------------------------------------------------------------------------
@@ -275,7 +413,6 @@ function TitleData:Scan(force)
     local earnedObtainableCount = 0
     local totalObtainableCount = 0
     local currentTitleID = GetCurrentTitle and GetCurrentTitle() or 0
-    local playerName = UnitName and UnitName("player") or "Player"
 
     local maxID = GetNumTitles and GetNumTitles() or 0
 
@@ -376,7 +513,7 @@ function TitleData:Scan(force)
                     record.date = GetEarnedDate(record.achievement_id)
                 end
 
-                local dedupeKey = BuildRecordDedupeKey(record)
+                local dedupeKey = BuildRecordDedupeKey(record, static)
                 local deduped = recordsByDedupeKey[dedupeKey]
 
                 if deduped then
@@ -449,9 +586,12 @@ function TitleData:Scan(force)
     self.earnedObtainableCount = earnedObtainableCount
     self.totalObtainableCount = totalObtainableCount
     self.currentTitleID = currentTitleID
-    self.playerName = playerName
     self.playerRealm = GetNormalizedRealmName and GetNormalizedRealmName() or "Unknown"
     self.dirty = false
+    -- After the records are in place: reading the title off the displayed name
+    -- uses TitleIndex, which is built from them.
+    self.playerName = ReadPlayerName(currentTitleID) or self.playerName
+        or (UnitName and UnitName("player")) or "Player"
 
     return records
 end
@@ -462,6 +602,7 @@ end
 function TitleData:RefreshActiveState()
     local currentTitleID = GetCurrentTitle and GetCurrentTitle() or 0
     self.currentTitleID = currentTitleID
+    self.playerName = ReadPlayerName(currentTitleID) or self.playerName
     if self.records then
         for _, record in ipairs(self.records) do
             if record._titleIDs then

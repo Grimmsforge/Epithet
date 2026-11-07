@@ -9,8 +9,8 @@ local GetSpellTexture = GetSpellTexture
 local LogbookUI = {}
 ns.LogbookUI = LogbookUI
 
-local CHECK_ICON = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-check-32"
-local LOCK_ICON = "Interface\\AddOns\\Epithet\\icons\\ui\\epithet-ui-lock-32"
+local CHECK_ICON = T.tex.check
+local LOCK_ICON = T.tex.lock
 local BINOCULARS_ICON = "Interface\\Icons\\INV_Misc_Spyglass_03"
 local ACHIEVEMENTS_LOG_ICON = "Interface\\Icons\\achievement_guildperk_mrpopularity_rank2"
 local CLASS_ICON = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
@@ -35,87 +35,11 @@ local STANDARD_BACKDROP = {
     insets = { left = 1, right = 1, top = 1, bottom = 1 },
 }
 
-local ACHIEVEMENT_FALLBACK_ICONS = {
-    count_1 = "Interface\\Icons\\INV_Misc_Spyglass_02",
-    count_10 = "Interface\\Icons\\INV_Misc_Eye_01",
-    count_25 = "Interface\\Icons\\INV_Misc_Note_01",
-    count_50 = "Interface\\Icons\\INV_Misc_Spyglass_03",
-    count_100 = "Interface\\Icons\\Ability_Rogue_Shadowstep",
-    count_200 = "Interface\\Icons\\inv_helm_misc_pignosemask_a_01",
-    count_350 = "Interface\\Icons\\Achievement_Boss_CThun",
-    count_500 = "Interface\\Icons\\INV_Misc_Book_09",
-    count_700 = "Interface\\Icons\\Inv_Box_BirdCage_01",
-    roll_call = "Interface\\Icons\\Achievement_pvp_p_10",
-    full_spectrum = "Interface\\Icons\\INV_Misc_Gem_Variety_01",
-    both_ends = "Interface\\Icons\\INV_Scroll_03",
-    grand_tour = "Interface\\Icons\\INV_Misc_Map_01",
-    title_fwends = "Interface\\Icons\\Achievement_WorldEvent_Valentine",
-    havent_we_met = "Interface\\Icons\\Ability_priest_focusedwill",
-    long_con = "Interface\\Icons\\Ability_Hunter_Pet_Turtle",
-    night_shift = "Interface\\Icons\\Spell_Holy_ElunesGrace",
-    busy_day = "Interface\\Icons\\Spell_Holy_BorrowedTime",
-    capital_offence = "Interface\\Icons\\Inv_jewelcrafting_gem_02",
-    old_money = "Interface\\Icons\\INV_Misc_Coin_02",
-    legendary_spot = "Interface\\Icons\\INV_Misc_Gem_Topaz_02",
-    potted_history = "Interface\\Icons\\INV_Misc_Flower_02",
-    diplomatic_immunity = "Interface\\Icons\\Achievement_Reputation_01",
-    small_world = "Interface\\Icons\\Achievement_Character_Gnome_Male",
-    creature_of_habit = "Interface\\Icons\\Spell_Nature_Polymorph_Cow",
-    seeing_stars = "Interface\\Icons\\Achievement_general_classact",
-    museum_curator = "Interface\\Icons\\Trade_archaeology_tinydinosaurskeleton",
-    gnome_spotter = "Interface\\Icons\\Ability_mount_mechastrider",
-    at_least_chicken = "Interface\\Icons\\Spell_Magic_PolymorphChicken",
-    certified = "Interface\\Icons\\Spell_Shadow_UnholyFrenzy",
-    overachiever = "Interface\\Icons\\Achievement_Quests_Completed_06",
-    guising = "Interface\\Icons\\INV_Misc_Bag_28_Halloween",
-    quite_a_mouthful = "Interface\\Icons\\Ability_mage_burnout",
-    terse = "Interface\\Icons\\INV_Misc_Note_05",
-    lord_of_lords = "Interface\\Icons\\Achievement_Boss_LichKing",
-    masterclass = "Interface\\Icons\\Achievement_bg_most_damage_killingblow_dieleast",
-    slay = "Interface\\Icons\\INV_Sword_27",
-    gladiator_groupie = "Interface\\Icons\\Achievement_FeatsOfStrength_Gladiator_01",
-    raid_spectator = "Interface\\Icons\\INV_Misc_Head_Dragon_01",
-    brown_noser = "Interface\\Icons\\Achievement_Reputation_03",
-    how_its_made = "Interface\\Icons\\Trade_Engineering",
-    people_watcher = "Interface\\Icons\\Achievement_halloween_smiley_01",
-    professional_lurker = "Interface\\Icons\\Ability_Ambush",
-    double_take = "Interface\\Icons\\Spell_nature_invisibilty",
-    early_bird = "Interface\\Icons\\INV_Egg_05",
-    weekend_warrior = "Interface\\Icons\\Ability_Warrior_OffensiveStance",
-    full_week = "Interface\\Icons\\INV_Misc_PocketWatch_02",
-    year_in_field = "Interface\\Icons\\INV_Misc_Book_02",
-    welcome_back = "Interface\\Icons\\Spell_Holy_Resurrection",
-    feast_your_eyes = "Interface\\Icons\\INV_Holiday_Christmas_Present_01",
-    participation_award = "Interface\\Icons\\INV_Misc_Coin_16",
-    sneaky_beaky = "Interface\\Icons\\Ability_Stealth",
-    dead_man_walking = "Interface\\Icons\\Spell_Deathknight_ClassIcon",
-    old_school = "Interface\\Icons\\Achievement_Zone_Barrens_01",
-    popular = "Interface\\Icons\\Spell_shadow_improvedvampiricembrace",
-    restraining_order = "Interface\\Icons\\INV_Misc_Note_03",
-    beyond_the_grave = "Interface\\Icons\\Achievement_halloween_ghost_01",
-    know_thy_enemy = "Interface\\Icons\\INV_BannerPVP_01",
-    secret_keeper = "Interface\\Icons\\INV_Misc_Key_03",
-    owned_1 = "Interface\\Icons\\INV_Crown_01",
-    owned_10 = "Interface\\Icons\\INV_Letter_15",
-    owned_25 = "Interface\\Icons\\INV_Misc_Ribbon_01",
-    owned_50 = "Interface\\Icons\\INV_Shield_04",
-    owned_100 = "Interface\\Icons\\Spell_Misc_EmotionHappy",
-    owned_spectrum = "Interface\\Icons\\INV_Chest_Cloth_17",
-    owned_both_ends = "Interface\\Icons\\INV_Misc_Book_07",
-    owned_legendary = "Interface\\Icons\\INV_Staff_Medivh",
-    owned_removed = "Interface\\Icons\\Trade_Archaeology",
-    impulse_purchase = "Interface\\Icons\\Achievement_guildperk_bartering",
-    curriculum_vitae = "Interface\\Icons\\INV_Scroll_11",
-    decorated_veteran = "Interface\\Icons\\INV_Jewelry_TrinketPVP_02",
-    nothing_new = "Interface\\Icons\\Spell_Holy_SearingLight",
-    matching_set = "Interface\\Icons\\INV_Misc_Gem_Variety_02",
-    takes_one = "Interface\\Icons\\Spell_Nature_MirrorImage",
-    window_shopper = "Interface\\Icons\\INV_Misc_Gift_01",
-    twinsies = "Interface\\Icons\\Spell_Magic_LesserInvisibilty",
-}
 
+-- Each achievement names its own icon in the flavour's set file.
 local function GetAchievementTileIcon(achievementID)
-    return ACHIEVEMENT_FALLBACK_ICONS[achievementID] or ACHIEVEMENT_ICON
+    local def = ns.SpottingAchievements and ns.SpottingAchievements:GetDef(achievementID)
+    return (def and def.icon) or ACHIEVEMENT_ICON
 end
 
 -- Shared with Spotting/Achievements.lua so the earned-achievement popup shows
@@ -1171,78 +1095,19 @@ local function OpenSpottingSettings()
     end
 end
 
+-- Logbook buttons: the shared bordered button (Theme.SkinButton) with a
+-- centred label. A selected tab does not react to hover.
 local function SkinEpithetButton(button)
-    local bg = button:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-    button.bg = bg
-
-    local top = button:CreateTexture(nil, "BORDER")
-    top:SetHeight(1)
-    top:SetPoint("TOPLEFT")
-    top:SetPoint("TOPRIGHT")
-    top:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-
-    local bottom = button:CreateTexture(nil, "BORDER")
-    bottom:SetHeight(1)
-    bottom:SetPoint("BOTTOMLEFT")
-    bottom:SetPoint("BOTTOMRIGHT")
-    bottom:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-
-    local left = button:CreateTexture(nil, "BORDER")
-    left:SetWidth(1)
-    left:SetPoint("TOPLEFT")
-    left:SetPoint("BOTTOMLEFT")
-    left:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-
-    local right = button:CreateTexture(nil, "BORDER")
-    right:SetWidth(1)
-    right:SetPoint("TOPRIGHT")
-    right:SetPoint("BOTTOMRIGHT")
-    right:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-
-    button.borders = { top, bottom, left, right }
-
     local label = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     label:SetPoint("CENTER", button, "CENTER", 0, 0)
-    label:SetTextColor(0.91, 0.78, 0.45)
     button.label = label
-
-    button:SetScript("OnEnter", function(self_)
-        if self_.selected then return end
-        self_.bg:SetColorTexture(0.16, 0.12, 0.07, 1.0)
-        self_.label:SetTextColor(0.96, 0.89, 0.65)
-        for _, border in ipairs(self_.borders) do
-            border:SetColorTexture(0.91, 0.78, 0.45, 1.0)
-        end
-    end)
-
-    button:SetScript("OnLeave", function(self_)
-        if self_.selected then return end
-        self_.bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-        self_.label:SetTextColor(0.91, 0.78, 0.45)
-        for _, border in ipairs(self_.borders) do
-            border:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-        end
-    end)
+    T.SkinButton(button, T.ButtonLooks.standard)
 end
 
 local function SetButtonSelected(button, selected)
     if not button then return end
     button.selected = selected and true or false
-    if button.selected then
-        button.bg:SetColorTexture(0.20, 0.15, 0.08, 1.0)
-        button.label:SetTextColor(1.0, 0.92, 0.70)
-        for _, border in ipairs(button.borders) do
-            border:SetColorTexture(0.95, 0.82, 0.48, 1.0)
-        end
-    else
-        button.bg:SetColorTexture(0.11, 0.08, 0.04, 1.0)
-        button.label:SetTextColor(0.91, 0.78, 0.45)
-        for _, border in ipairs(button.borders) do
-            border:SetColorTexture(0.49, 0.37, 0.15, 1.0)
-        end
-    end
+    button:SetLook(button.selected and "selected" or "idle")
 end
 
 local function CreateChromePanel(mainFrame)
@@ -1258,8 +1123,8 @@ local function CreateChromePanel(mainFrame)
         panel:SetBackdropColor(T.col.bg0.r, T.col.bg0.g, T.col.bg0.b, 1.0)
         panel:SetBackdropBorderColor(T.col.line.r, T.col.line.g, T.col.line.b, 0.8)
     else
-        panel:SetBackdropColor(0.08, 0.06, 0.03, 1.0)
-        panel:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.8)
+        panel:SetBackdropColor(T.RGBA(T.col.surface))
+        panel:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.8))
     end
     panel:Hide()
 
@@ -1274,7 +1139,7 @@ local function CreateCloseButton(panel, onClick)
     closeText:SetPoint("CENTER")
     closeText:SetText("x")
     closeText:SetScale(2)
-    closeText:SetTextColor(0.95, 0.90, 0.75)
+    closeText:SetTextColor(T.RGBA(T.col.logbookCloseText))
     close:SetScript("OnClick", onClick)
     return close
 end
@@ -1321,7 +1186,7 @@ end
 local function ApplySpottedStateIcons(widget, data)
     if data.isSpotted then
         TrySetTexture(widget.state, CHECK_ICON)
-        widget.state:SetVertexColor(0.90, 0.74, 0.30, 1.0)
+        widget.state:SetVertexColor(T.RGBA(T.col.logbookStateOn))
 
         local classCoords = GetClassCoords(data.log and data.log.classTag)
         if classCoords then
@@ -1339,7 +1204,7 @@ local function ApplySpottedStateIcons(widget, data)
         end
     else
         TrySetTexture(widget.state, LOCK_ICON)
-        widget.state:SetVertexColor(0.56, 0.52, 0.45, 1.0)
+        widget.state:SetVertexColor(T.RGBA(T.col.logbookStateOff))
         widget.portrait:Hide()
         widget.race:Hide()
         if widget.raceBlend then widget.raceBlend:Hide() end
@@ -1425,7 +1290,7 @@ function LogbookUI:CreateButton(mainFrame)
     spotIcon:SetPoint("BOTTOMRIGHT", spotButton, "BOTTOMRIGHT", -4, 4)
     spotIcon:SetTexture(BINOCULARS_ICON)
     spotIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    spotIcon:SetVertexColor(0.86, 0.74, 0.40, 0.95)
+    spotIcon:SetVertexColor(T.RGBA(T.col.logbookToolIcon, 0.95))
     spotButton.icon = spotIcon
 
     local achIcon = achButton:CreateTexture(nil, "ARTWORK")
@@ -1433,7 +1298,7 @@ function LogbookUI:CreateButton(mainFrame)
     achIcon:SetPoint("BOTTOMRIGHT", achButton, "BOTTOMRIGHT", -4, 4)
     achIcon:SetTexture(ACHIEVEMENTS_LOG_ICON)
     achIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    achIcon:SetVertexColor(0.86, 0.74, 0.40, 0.95)
+    achIcon:SetVertexColor(T.RGBA(T.col.logbookToolIcon, 0.95))
     achButton.icon = achIcon
 
     spotButton:SetScript("OnClick", function(_, mouseButton)
@@ -1450,7 +1315,7 @@ function LogbookUI:CreateButton(mainFrame)
         self:Toggle()
     end)
     spotButton:SetScript("OnEnter", function(self_)
-        spotIcon:SetVertexColor(1.0, 0.9, 0.55, 1.0)
+        spotIcon:SetVertexColor(T.RGBA(T.col.logbookToolIconHover))
         GameTooltip:SetOwner(self_, "ANCHOR_BOTTOMRIGHT")
         local count = ns.SpottingLog and ns.SpottingLog.Count and ns.SpottingLog:Count() or 0
         GameTooltip:SetText((L and L["SPOTTING_LOG_TOOLTIP"] and string.format(L["SPOTTING_LOG_TOOLTIP"], count)) or ("Spotting Log (" .. count .. " found)"), 1, 1, 1)
@@ -1460,7 +1325,7 @@ function LogbookUI:CreateButton(mainFrame)
         GameTooltip:Show()
     end)
     spotButton:SetScript("OnLeave", function()
-        spotIcon:SetVertexColor(0.86, 0.74, 0.40, 0.95)
+        spotIcon:SetVertexColor(T.RGBA(T.col.logbookToolIcon, 0.95))
         GameTooltip:Hide()
     end)
 
@@ -1468,14 +1333,14 @@ function LogbookUI:CreateButton(mainFrame)
         self:ShowAchievements()
     end)
     achButton:SetScript("OnEnter", function(self_)
-        achIcon:SetVertexColor(1.0, 0.9, 0.55, 1.0)
+        achIcon:SetVertexColor(T.RGBA(T.col.logbookToolIconHover))
         GameTooltip:SetOwner(self_, "ANCHOR_BOTTOMRIGHT")
         GameTooltip:SetText((L and L["SPOT_ACHV_TOOLTIP"]) or "Open Epithet achievements.", 1, 1, 1)
         GameTooltip:AddLine((L and L["SPOT_ACHV_TOOLTIP_LEFT"]) or "Left-click: Open achievements.", 0.85, 0.82, 0.72, true)
         GameTooltip:Show()
     end)
     achButton:SetScript("OnLeave", function()
-        achIcon:SetVertexColor(0.86, 0.74, 0.40, 0.95)
+        achIcon:SetVertexColor(T.RGBA(T.col.logbookToolIcon, 0.95))
         GameTooltip:Hide()
     end)
 
@@ -1512,8 +1377,8 @@ function LogbookUI:EnsureTransferModal()
     modal:SetFrameLevel((panel:GetFrameLevel() or 1) + 50)
     modal:EnableMouse(true)
     modal:SetBackdrop(STANDARD_BACKDROP)
-    modal:SetBackdropColor(0.06, 0.05, 0.03, 0.98)
-    modal:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.95)
+    modal:SetBackdropColor(T.RGBA(T.col.logbookModalBg, 0.98))
+    modal:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.95))
     modal:Hide()
 
     local heading = modal:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -1533,8 +1398,8 @@ function LogbookUI:EnsureTransferModal()
     editorWrap:SetPoint("TOPLEFT", modal, "TOPLEFT", 12, -48)
     editorWrap:SetPoint("BOTTOMRIGHT", modal, "BOTTOMRIGHT", -32, 48)
     editorWrap:SetBackdrop(STANDARD_BACKDROP)
-    editorWrap:SetBackdropColor(0.08, 0.07, 0.05, 1.0)
-    editorWrap:SetBackdropBorderColor(0.40, 0.34, 0.22, 0.95)
+    editorWrap:SetBackdropColor(T.RGBA(T.col.logbookInsetBg))
+    editorWrap:SetBackdropBorderColor(T.RGBA(T.col.logbookInsetBorder, 0.95))
 
     local scroll = CreateFrame("ScrollFrame", nil, editorWrap, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", editorWrap, "TOPLEFT", 4, -4)
@@ -1719,7 +1584,7 @@ function LogbookUI:CreatePanel(mainFrame)
     viewSep:SetWidth(1)
     viewSep:SetHeight(18)
     viewSep:SetPoint("LEFT", remainingBtn, "RIGHT", 9, 0)
-    viewSep:SetColorTexture(0.55, 0.45, 0.26, 0.7)
+    viewSep:SetColorTexture(T.RGBA(T.col.frameBorder, 0.7))
 
     local listBtn = self:CreateModeButton(controlsRow, (L and L["SPOTTING_VIEW_LIST"]) or "List", function()
         self.viewMode = "list"
@@ -1750,8 +1615,8 @@ function LogbookUI:CreatePanel(mainFrame)
     infoWrap:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -12, -70)
     infoWrap:SetHeight(62)
     infoWrap:SetBackdrop(STANDARD_BACKDROP)
-    infoWrap:SetBackdropColor(0.09, 0.07, 0.04, 0.95)
-    infoWrap:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.65)
+    infoWrap:SetBackdropColor(T.RGBA(T.col.logbookInfoBg, 0.95))
+    infoWrap:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.65))
 
     local infoTitle = infoWrap:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     infoTitle:SetPoint("TOPLEFT", infoWrap, "TOPLEFT", 10, -8)
@@ -1772,7 +1637,7 @@ function LogbookUI:CreatePanel(mainFrame)
     divider:SetPoint("TOPLEFT", infoWrap, "BOTTOMLEFT", 0, -8)
     divider:SetPoint("TOPRIGHT", infoWrap, "BOTTOMRIGHT", 0, -8)
     divider:SetHeight(1)
-    divider:SetColorTexture(0.55, 0.45, 0.26, 0.35)
+    divider:SetColorTexture(T.RGBA(T.col.frameBorder, 0.35))
 
     local contentArea = CreateFrame("Frame", nil, panel)
     contentArea:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", 0, -6)
@@ -1831,7 +1696,7 @@ function LogbookUI:CreatePanel(mainFrame)
     gatedText:SetPoint("RIGHT", gated, "RIGHT", -70, 0)
     gatedText:SetJustifyH("CENTER")
     gatedText:SetText(L and L["SPOTTING_LOG_GATED"] or "Title spotting is off. Sightings are not being recorded.")
-    local gatedWarnCol = (T and T.col and T.col.warn) or { r = 0.851, g = 0.541, b = 0.322 }
+    local gatedWarnCol = T.col.warn
     gatedText:SetTextColor(gatedWarnCol.r, gatedWarnCol.g, gatedWarnCol.b)
 
     local settingsButton = CreateFrame("Button", nil, gated)
@@ -1954,15 +1819,15 @@ function LogbookUI:CreateAchievementsPanel(mainFrame)
     divider:SetPoint("TOPLEFT", controlsRow, "BOTTOMLEFT", -2, -8)
     divider:SetPoint("TOPRIGHT", controlsRow, "BOTTOMRIGHT", 2, -8)
     divider:SetHeight(1)
-    divider:SetColorTexture(0.55, 0.45, 0.26, 0.35)
+    divider:SetColorTexture(T.RGBA(T.col.frameBorder, 0.35))
 
     local metaWrap = CreateFrame("Frame", nil, panel, "BackdropTemplate")
     metaWrap:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", 0, -8)
     metaWrap:SetPoint("TOPRIGHT", divider, "BOTTOMRIGHT", 0, -8)
     metaWrap:SetHeight(58)
     metaWrap:SetBackdrop(STANDARD_BACKDROP)
-    metaWrap:SetBackdropColor(0.09, 0.07, 0.04, 0.95)
-    metaWrap:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.65)
+    metaWrap:SetBackdropColor(T.RGBA(T.col.logbookInfoBg, 0.95))
+    metaWrap:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.65))
 
     local metaTitle = metaWrap:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     metaTitle:SetPoint("TOPLEFT", metaWrap, "TOPLEFT", 10, -8)
@@ -1983,7 +1848,7 @@ function LogbookUI:CreateAchievementsPanel(mainFrame)
     contentDivider:SetPoint("TOPLEFT", metaWrap, "BOTTOMLEFT", 0, -8)
     contentDivider:SetPoint("TOPRIGHT", metaWrap, "BOTTOMRIGHT", 0, -8)
     contentDivider:SetHeight(1)
-    contentDivider:SetColorTexture(0.55, 0.45, 0.26, 0.35)
+    contentDivider:SetColorTexture(T.RGBA(T.col.frameBorder, 0.35))
 
     local contentArea = CreateFrame("Frame", nil, panel)
     contentArea:SetPoint("TOPLEFT", contentDivider, "BOTTOMLEFT", 0, -6)
@@ -2084,7 +1949,7 @@ function LogbookUI:EnsureAchievementDetailOverlay()
     overlay:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
     })
-    overlay:SetBackdropColor(0, 0, 0, 0.72)
+    overlay:SetBackdropColor(T.RGBA(T.col.black, 0.72))
     overlay:SetAlpha(0)
     overlay:Hide()
 
@@ -2099,11 +1964,11 @@ function LogbookUI:EnsureAchievementDetailOverlay()
         card:SetPropagateMouseClicks(false)
     end
     card:SetBackdrop(STANDARD_BACKDROP)
-    card:SetBackdropColor(0.08, 0.07, 0.05, 0.98)
-    card:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.95)
+    card:SetBackdropColor(T.RGBA(T.col.logbookInsetBg, 0.98))
+    card:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.95))
 
-    local goldCol = (T and T.col and T.col.gold) or { r = 0.91, g = 0.78, b = 0.45 }
-    local goldBrightCol = (T and T.col and T.col.goldBright) or { r = 0.96, g = 0.89, b = 0.65 }
+    local goldCol = T.col.gold
+    local goldBrightCol = T.col.goldBright
 
     -- Left room at the front of the heading for the diamond ornament below,
     -- which anchors to (and vertically centers against) the heading itself.
@@ -2125,8 +1990,8 @@ function LogbookUI:EnsureAchievementDetailOverlay()
     bodyWrap:SetPoint("TOPLEFT", card, "TOPLEFT", 12, -36)
     bodyWrap:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -12, 44)
     bodyWrap:SetBackdrop(STANDARD_BACKDROP)
-    bodyWrap:SetBackdropColor(0.08, 0.07, 0.05, 1.0)
-    bodyWrap:SetBackdropBorderColor(0.40, 0.34, 0.22, 0.95)
+    bodyWrap:SetBackdropColor(T.RGBA(T.col.logbookInsetBg))
+    bodyWrap:SetBackdropBorderColor(T.RGBA(T.col.logbookInsetBorder, 0.95))
     -- Contain the shine burst to the body area so its scale animation can
     -- never bleed past the card into the rest of the screen.
     if bodyWrap.SetClipsChildren then
@@ -2188,12 +2053,12 @@ function LogbookUI:EnsureAchievementDetailOverlay()
     closeXText:SetPoint("CENTER")
     closeXText:SetText("x")
     closeXText:SetScale(2)
-    closeXText:SetTextColor(0.91, 0.78, 0.45)
+    closeXText:SetTextColor(T.RGBA(T.col.gold))
     closeX:SetScript("OnEnter", function()
-        closeXText:SetTextColor(1.0, 0.92, 0.70)
+        closeXText:SetTextColor(T.RGBA(T.col.logbookCloseHover))
     end)
     closeX:SetScript("OnLeave", function()
-        closeXText:SetTextColor(0.91, 0.78, 0.45)
+        closeXText:SetTextColor(T.RGBA(T.col.gold))
     end)
     closeX:SetScript("OnClick", function() self:CloseAchievementDetail() end)
 
@@ -2350,11 +2215,11 @@ function LogbookUI:OpenAchievementDetail(data)
     TrySetTexture(overlay.icon, iconPath)
     overlay.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     if data.masked then
-        overlay.icon:SetVertexColor(0.66, 0.62, 0.55, 1.0)
+        overlay.icon:SetVertexColor(T.RGBA(T.col.logbookIconMasked))
     elseif earned then
         overlay.icon:SetVertexColor(1, 1, 1, 1)
     else
-        overlay.icon:SetVertexColor(0.72, 0.72, 0.72, 0.95)
+        overlay.icon:SetVertexColor(T.RGBA(T.col.logbookIconLocked, 0.95))
     end
     if overlay.icon.SetDesaturated then
         overlay.icon:SetDesaturated(not earned)
@@ -2497,8 +2362,8 @@ function LogbookUI:AcquireAchievementTile(index)
 
     tile = CreateFrame("Button", nil, self.achievementGridContent, "BackdropTemplate")
     tile:SetBackdrop(STANDARD_BACKDROP)
-    tile:SetBackdropColor(0.11, 0.09, 0.06, 0.92)
-    tile:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.55)
+    tile:SetBackdropColor(T.RGBA(T.col.logbookTileBg, 0.92))
+    tile:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.55))
 
     local state = tile:CreateTexture(nil, "ARTWORK")
     state:SetSize(14, 14)
@@ -2509,8 +2374,8 @@ function LogbookUI:AcquireAchievementTile(index)
     statePlate:SetSize(22, 22)
     statePlate:SetPoint("TOPLEFT", tile, "TOPLEFT", 4, -4)
     statePlate:SetBackdrop(STANDARD_BACKDROP)
-    statePlate:SetBackdropColor(0.02, 0.02, 0.02, 0.85)
-    statePlate:SetBackdropBorderColor(0.72, 0.58, 0.28, 0.95)
+    statePlate:SetBackdropColor(T.RGBA(T.col.logbookStatePlateBg, 0.85))
+    statePlate:SetBackdropBorderColor(T.RGBA(T.col.logbookStatePlateBorder, 0.95))
     state:SetParent(statePlate)
     state:SetPoint("CENTER", statePlate, "CENTER", 0, 0)
     tile.statePlate = statePlate
@@ -2525,19 +2390,19 @@ function LogbookUI:AcquireAchievementTile(index)
     secretBadge:SetSize(22, 14)
     secretBadge:SetPoint("TOPRIGHT", tile, "TOPRIGHT", -4, -4)
     secretBadge:SetBackdrop(STANDARD_BACKDROP)
-    secretBadge:SetBackdropColor(0.10, 0.08, 0.05, 0.92)
-    secretBadge:SetBackdropBorderColor(0.94, 0.80, 0.40, 0.95)
+    secretBadge:SetBackdropColor(T.RGBA(T.col.bg1, 0.92))
+    secretBadge:SetBackdropBorderColor(T.RGBA(T.col.logbookSecretBorder, 0.95))
     secretBadge:Hide()
 
     local secretBadgeText = secretBadge:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     secretBadgeText:SetPoint("CENTER")
     secretBadgeText:SetText("?")
-    secretBadgeText:SetTextColor(0.96, 0.88, 0.56)
+    secretBadgeText:SetTextColor(T.RGBA(T.col.logbookSecretText))
 
     tile.secretBadge = secretBadge
 
     tile:SetScript("OnEnter", function(self_)
-        self_:SetBackdropBorderColor(0.83, 0.70, 0.36, 0.9)
+        self_:SetBackdropBorderColor(T.RGBA(T.col.logbookTileBorderHover, 0.9))
         if self_.data then
             self:ConfigureEntryTooltip(self_, self_.data)
         end
@@ -2550,7 +2415,7 @@ function LogbookUI:AcquireAchievementTile(index)
     end)
 
     tile:SetScript("OnLeave", function(self_)
-        self_:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.55)
+        self_:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.55))
         GameTooltip:Hide()
     end)
 
@@ -2594,17 +2459,17 @@ function LogbookUI:RefreshAchievementTiles(entries)
 
         if data.earned then
             TrySetTexture(tile.state, CHECK_ICON)
-            tile.state:SetVertexColor(0.90, 0.74, 0.30, 1.0)
-            tile.statePlate:SetBackdropBorderColor(0.95, 0.80, 0.36, 1.0)
-            tile:SetBackdropBorderColor(0.67, 0.57, 0.30, 0.85)
+            tile.state:SetVertexColor(T.RGBA(T.col.logbookStateOn))
+            tile.statePlate:SetBackdropBorderColor(T.RGBA(T.col.logbookStatePlateEarned))
+            tile:SetBackdropBorderColor(T.RGBA(T.col.logbookTileBorderEarned, 0.85))
             if tile.icon.SetDesaturated then
                 tile.icon:SetDesaturated(false)
             end
         else
             TrySetTexture(tile.state, LOCK_ICON)
-            tile.state:SetVertexColor(0.88, 0.84, 0.75, 1.0)
-            tile.statePlate:SetBackdropBorderColor(0.86, 0.74, 0.42, 1.0)
-            tile:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.55)
+            tile.state:SetVertexColor(T.RGBA(T.col.logbookTileStateLocked))
+            tile.statePlate:SetBackdropBorderColor(T.RGBA(T.col.logbookStatePlateLocked))
+            tile:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.55))
             if tile.icon.SetDesaturated then
                 tile.icon:SetDesaturated(true)
             end
@@ -2620,10 +2485,10 @@ function LogbookUI:RefreshAchievementTiles(entries)
 
         if data.masked then
             TrySetTexture(tile.state, LOCK_ICON)
-            tile.state:SetVertexColor(0.88, 0.84, 0.75, 1.0)
+            tile.state:SetVertexColor(T.RGBA(T.col.logbookTileStateLocked))
             TrySetTexture(tile.icon, "Interface\\Icons\\inv_misc_questionmark")
             tile.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-            tile.icon:SetVertexColor(0.66, 0.62, 0.55, 1.0)
+            tile.icon:SetVertexColor(T.RGBA(T.col.logbookIconMasked))
             if tile.icon.SetDesaturated then
                 tile.icon:SetDesaturated(true)
             end
@@ -2636,7 +2501,7 @@ function LogbookUI:RefreshAchievementTiles(entries)
             if data.earned then
                 tile.icon:SetVertexColor(1, 1, 1, 1)
             else
-                tile.icon:SetVertexColor(0.72, 0.72, 0.72, 0.95)
+                tile.icon:SetVertexColor(T.RGBA(T.col.logbookIconLocked, 0.95))
             end
             tile.icon:ClearAllPoints()
             tile.icon:SetPoint("TOPLEFT", tile, "TOPLEFT", 2, -2)
@@ -2833,7 +2698,7 @@ function LogbookUI:AcquireRow(index)
 
     local bg = row:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(1, 1, 1, 0.02)
+    bg:SetColorTexture(T.RGBA(T.col.white, 0.02))
     row.bg = bg
 
     local state = row:CreateTexture(nil, "ARTWORK")
@@ -2869,18 +2734,18 @@ function LogbookUI:AcquireRow(index)
     local meta = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     meta:SetPoint("RIGHT", row, "RIGHT", -8, 0)
     meta:SetJustifyH("RIGHT")
-    meta:SetTextColor(0.72, 0.66, 0.56)
+    meta:SetTextColor(T.RGBA(T.col.logbookRowMeta))
     row.meta = meta
 
     row:SetScript("OnEnter", function(self_)
-        self_.bg:SetColorTexture(1, 1, 1, 0.05)
+        self_.bg:SetColorTexture(T.RGBA(T.col.white, 0.05))
         if self_.data then
             self:ConfigureEntryTooltip(self_, self_.data)
         end
     end)
 
     row:SetScript("OnLeave", function(self_)
-        self_.bg:SetColorTexture(1, 1, 1, 0.02)
+        self_.bg:SetColorTexture(T.RGBA(T.col.white, 0.02))
         GameTooltip:Hide()
     end)
 
@@ -2900,20 +2765,20 @@ function LogbookUI:RefreshRows(entries)
         if data.entryType == "achievement" then
             if data.earned then
                 TrySetTexture(row.state, CHECK_ICON)
-                row.state:SetVertexColor(0.90, 0.74, 0.30, 1.0)
+                row.state:SetVertexColor(T.RGBA(T.col.logbookStateOn))
             else
                 TrySetTexture(row.state, LOCK_ICON)
-                row.state:SetVertexColor(0.56, 0.52, 0.45, 1.0)
+                row.state:SetVertexColor(T.RGBA(T.col.logbookStateOff))
             end
 
             if data.masked then
                 TrySetTexture(row.state, LOCK_ICON)
-                row.state:SetVertexColor(0.56, 0.52, 0.45, 1.0)
+                row.state:SetVertexColor(T.RGBA(T.col.logbookStateOff))
                 row.portrait:Hide()
                 row.race:Hide()
                 if row.raceBlend then row.raceBlend:Hide() end
                 row.title:SetText((L and L["SPOT_ACHV_SECRET_NAME"]) or "???")
-                row.title:SetTextColor(0.70, 0.66, 0.58)
+                row.title:SetTextColor(T.RGBA(T.col.logbookRowTitleMasked))
                 row.meta:SetText("")
             else
                 TrySetTexture(row.portrait, ACHIEVEMENT_ICON)
@@ -2923,9 +2788,9 @@ function LogbookUI:RefreshRows(entries)
                 if row.raceBlend then row.raceBlend:Hide() end
                 row.title:SetText(data.name or "")
                 if data.earned then
-                    row.title:SetTextColor(0.96, 0.88, 0.62)
+                    row.title:SetTextColor(T.RGBA(T.col.logbookRowTitleEarned))
                 else
-                    row.title:SetTextColor(0.84, 0.80, 0.71)
+                    row.title:SetTextColor(T.RGBA(T.col.logbookRowTitle))
                 end
 
                 local right = data.groupLabel or ""
@@ -2969,8 +2834,8 @@ function LogbookUI:AcquireTile(index)
 
     tile = CreateFrame("Button", nil, self.gridContent, "BackdropTemplate")
     tile:SetBackdrop(STANDARD_BACKDROP)
-    tile:SetBackdropColor(0.11, 0.09, 0.06, 0.92)
-    tile:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.55)
+    tile:SetBackdropColor(T.RGBA(T.col.logbookTileBg, 0.92))
+    tile:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.55))
 
     local state = tile:CreateTexture(nil, "ARTWORK")
     state:SetSize(16, 16)
@@ -3013,14 +2878,14 @@ function LogbookUI:AcquireTile(index)
     tile.meta = meta
 
     tile:SetScript("OnEnter", function(self_)
-        self_:SetBackdropBorderColor(0.83, 0.70, 0.36, 0.9)
+        self_:SetBackdropBorderColor(T.RGBA(T.col.logbookTileBorderHover, 0.9))
         if self_.data then
             self:ConfigureEntryTooltip(self_, self_.data)
         end
     end)
 
     tile:SetScript("OnLeave", function(self_)
-        self_:SetBackdropBorderColor(0.55, 0.45, 0.26, 0.55)
+        self_:SetBackdropBorderColor(T.RGBA(T.col.frameBorder, 0.55))
         GameTooltip:Hide()
     end)
 

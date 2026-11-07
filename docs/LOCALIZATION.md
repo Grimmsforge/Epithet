@@ -4,7 +4,7 @@ Epithet is fully localizable. All user-facing UI strings route through a single
 locale table, `ns.L`. This guide explains how the system works and how to add a
 new language.
 
-> The **Titles database** (`data/TitlesDB.enGB.lua`) is translated separately via
+> The **Titles database** (`data/<flavour>/TitlesDB.enGB.lua`) is translated separately via
 > sparse overlays — see [Localised title database](#localised-title-database) at
 > the end. Most of this guide is about the addon's own UI text.
 
@@ -98,7 +98,7 @@ client.
 
 ## What's New content
 
-Per-version release notes live in `WhatsNew/Versions/*.lua`. Their `title` and
+Per-version release notes live in `WhatsNew/Retail/*.lua` and `WhatsNew/Forever/*.lua` (one folder per game flavour). Their `title` and
 `body` fields may be either a plain string or a table keyed by locale:
 
 ```lua
@@ -118,7 +118,7 @@ measure its length.
 These match the **English catalogue name**, not the name on screen, so they need
 no per-locale data and work identically on every client. The spotting log is
 keyed by `titleID` — Blizzard's numeric ID, the same in every locale — and the
-bundled DB (`data/TitlesDB.enGB.lua`) is always English, so `CatalogueText()` in
+bundled DB (`data/<flavour>/TitlesDB.enGB.lua`) is always English, so `CatalogueText()` in
 `Spotting/Achievements.lua` resolves any spotted title back to its English name.
 The search words are therefore plain constants:
 
@@ -185,9 +185,26 @@ base-plus-overlay shape.
 > changing one side without the other breaks translations silently until
 > someone runs `scripts/validate/validate-titlesdb-locales.ps1`.
 
-- **`data/TitlesDB.enGB.lua`** is the canonical base: the full English dataset,
+**One folder per flavour.** `data/` has nothing at its root:
+
+| Folder | Client | Game type | Overlays |
+| --- | --- | --- | --- |
+| `data/retail/` | Retail live and PTR (same game, same title IDs) | `standard` | deDE, frFR, ruRU, zhCN |
+| `data/forever/` | WoW Forever | `camelot` | none yet |
+
+Each client loads only its own folder: every data line in `Epithet.toc` carries
+`[AllowLoadGameType standard]` or `[AllowLoadGameType camelot]`. The two are
+complete, separate title sets with **unrelated title IDs** (Forever 1 is "of the
+Magram", Retail 1 is "Private"), so an overlay only ever applies to its own
+folder's base. A Retail overlay must never load on Forever: it would attach
+Retail translations to unrelated Forever titles.
+
+- **`data/<flavour>/TitlesDB.enGB.lua`** is the canonical base: the full English dataset,
   keyed by title text, carrying every field. It's collector-generated (gitignored).
-- **`data/TitlesDB.<code>.lua`** (e.g. `TitlesDB.ruRU.lua`) are **sparse overlays**
+  When the client gives one text several IDs (Forever's Alliance "Sergeant" 10 and
+  Horde "Sergeant" 23), each ID has its own entry: the first under its text, the
+  rest under `"<text>#<titleID>"`, with `text` holding the real title text.
+- **`data/<flavour>/TitlesDB.<code>.lua`** (e.g. `data/retail/TitlesDB.ruRU.lua`) are **sparse overlays**
   keyed by **`titleID`** — the numeric ID Blizzard assigns, identical on every
   client locale, so it's the stable join key. An overlay translates only the
   free-prose fields Epithet displays from the database:
@@ -206,15 +223,18 @@ active display language (`ns.activeLocale`), and `TitleData:Scan()` prefers an
 overlay field, falling back to the base. A language switch triggers a `ReloadUI`,
 so `Scan` re-runs fresh — no live-refresh path is needed.
 
-**Adding one:** copy `data/TitlesDB.ruRU.lua.example` to `data/TitlesDB.<code>.lua`,
-fill in `byID`, add it under `# Bundled Data` in `Epithet.toc` **after** the enGB
-base, then validate:
+**Adding one:** generate it with the collector (its locale sources are split
+the same way, `locales/<flavour>/`), which writes `data/<flavour>/TitlesDB.<code>.lua`.
+Add it under `# Bundled Data` in `Epithet.toc` **after** that flavour's enGB
+base, with the same `[AllowLoadGameType ...]` gate as the base, then validate:
 
 ```powershell
-powershell -File scripts\validate\validate-titlesdb-locales.ps1
+pwsh -File scripts\validate\validate-titlesdb-locales.ps1                 # every flavour
+pwsh -File scripts\validate\validate-titlesdb-locales.ps1 -Flavor forever # one flavour
 ```
 
-Reports, per overlay: coverage (titles translated) and **orphan titleIDs** not in
-the base (errors). Also lints for `\x` hex escapes and stray `null` literals
+Reports, per flavour and overlay: coverage (titles translated) and **orphan
+titleIDs** not in that flavour's base (errors), plus any stray file at the
+`data/` root (error). Also lints for `\x` hex escapes and stray `null` literals
 (Lua has no `null` — it silently becomes `nil`). Exit code is non-zero on any
 error, so it can gate CI.

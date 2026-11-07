@@ -21,13 +21,19 @@ Content registry:
 
 - WhatsNew/Content.lua
 
-Per-version content:
+Per-version content, one folder per game flavour (each file gated in `Epithet.toc`; see [FLAVOURS.md](FLAVOURS.md)):
 
-- WhatsNew/Versions/v1_1_1.lua
+- WhatsNew/Retail/v1_4_0.lua (`[AllowLoadGameType standard]`: Retail and PTR)
+- WhatsNew/Forever/v1_4_0.lua (`[AllowLoadGameType camelot]`: WoW Forever)
+
+Each game sees only its own notes. A release does not need notes:
+
+- **With notes for the current version:** the window opens once after the update (unless the entry sets `hasNew = false`), and `/epithet whatsnew` shows them.
+- **Without:** nothing opens by itself, and `/epithet whatsnew` shows the newest notes there are for that game (`WhatsNew:GetLatestContentVersion()`).
 
 Per-version art (optional):
 
-- WhatsNew/Versions/v1_1_1/
+- WhatsNew/<Flavour>/v1_1_1/
   - A folder alongside the matching `.lua` file, for art that is specific to that
     version's changelog only (a feature banner, a one-off screenshot). It is not
     listed in `Epithet.toc` — texture files are referenced by path at runtime and
@@ -149,11 +155,11 @@ or client-compatibility fallback is needed, since this only depends on plain
 
 ## How to add a new release entry
 
-1. Create a new file in WhatsNew/Versions, for example v1_1_2.lua
+1. Create a new file in WhatsNew/Retail/ and/or WhatsNew/Forever/, for example v1_1_2.lua
 2. Register ns.WhatsNewContent.versions[1.1.2] with title, body, and hasNew
-3. If that version needs its own art, add it under a sibling WhatsNew/Versions/v1_1_2/
+3. If that version needs its own art, add it under a sibling WhatsNew/<Flavour>/v1_1_2/
    folder and reference it from the body with an image line — no toc entry needed
-4. Add the new .lua file to Epithet.toc under the What’s New content section
+4. Add the new .lua file to Epithet.toc under the What’s New content section, with its flavour's gate (`scripts/validate/validate-flavours.ps1` checks it)
 5. Bump addon version metadata in Epithet.toc
 
 ## Operational notes

@@ -1,4 +1,4 @@
-## Interface: 120105
+## Interface: 120105, 120107, 16001
 ## Title: Epithet
 ## Notes: Browse all player titles, see how each was obtained, rarity tiers, and track your collection.
 ## Notes-ruRU: Просмотр всех званий игроков, информация о способах их получения, рангах редкости и отслеживание вашей коллекции.
@@ -6,7 +6,7 @@
 ## Notes-frFR: Parcourez tous les titres du jeu, découvrez comment chacun s'obtient, leur palier de rareté, et suivez votre collection.
 ## Notes-zhCN: 浏览所有玩家头衔，查看每个头衔的获取方式、稀有度等级，并跟踪您的收藏。
 ## Author: Joe Tomkinson (Grimmvöcare - Bronzebeard) @ GrimmsForge
-## Version: 1.3.3
+## Version: 1.4.1
 ## SavedVariables: EpithetDB
 ## IconTexture: Interface\AddOns\Epithet\icons\logo\epithet-wax-seal-red-mark-64
 ## OptionalDeps: Ace3, LibDataBroker-1.1, LibDBIcon-1.0
@@ -28,20 +28,35 @@ Locales\frFR.lua
 Locales\zhCN.lua
 
 # Bundled Data
+# One flavour's data per client, chosen by the client's own game type: Retail
+# and PTR are "standard", WoW Forever is "camelot". Both enGB bases define the
+# same EpithetData globals and their titleIDs differ, so the two sets must never
+# load together, and Retail's titleID-keyed overlays never load on Forever.
 # enGB is the canonical base; localised overlays load AFTER it and fall back to
 # it for any field they don't translate (see docs/LOCALIZATION.md).
-data\TitlesDB.enGB.lua
-data\TitlesDB.deDE.lua
-data\TitlesDB.ruRU.lua
-data\TitlesDB.frFR.lua
-data\TitlesDB.zhCN.lua
+data\retail\TitlesDB.enGB.lua [AllowLoadGameType standard]
+data\retail\TitlesDB.deDE.lua [AllowLoadGameType standard]
+data\retail\TitlesDB.ruRU.lua [AllowLoadGameType standard]
+data\retail\TitlesDB.frFR.lua [AllowLoadGameType standard]
+data\retail\TitlesDB.zhCN.lua [AllowLoadGameType standard]
+data\forever\TitlesDB.enGB.lua [AllowLoadGameType camelot]
 WhatsNew\Content.lua
-WhatsNew\Versions\v1_3_0.lua
-WhatsNew\Versions\v1_3_1.lua
-WhatsNew\Versions\v1_3_2.lua
+# Each flavour's own release notes: Retail and PTR are "standard", WoW Forever
+# is "camelot". Only the current version's entry is ever shown.
+WhatsNew\Retail\v1_3_0.lua [AllowLoadGameType standard]
+WhatsNew\Retail\v1_3_1.lua [AllowLoadGameType standard]
+WhatsNew\Retail\v1_3_2.lua [AllowLoadGameType standard]
+WhatsNew\Retail\v1_4_0.lua [AllowLoadGameType standard]
+WhatsNew\Forever\v1_4_0.lua [AllowLoadGameType camelot]
+WhatsNew\Forever\v1_4_1.lua [AllowLoadGameType camelot]
 
 # Core
+Core\Flavor.lua
+Flavors\Forever\Flavor.lua [AllowLoadGameType camelot]
 Core\Theme.lua
+# Per-flavour theme overrides: straight after the theme, before anything that
+# reads it. Retail uses the shared theme as-is.
+Flavors\Forever\Theme.lua [AllowLoadGameType camelot]
 Core\SocialLayouts.lua
 Core\SocialLayouts\classic.lua
 Core\SocialLayouts\portrait.lua
@@ -59,6 +74,9 @@ Core\Epithet.lua
 Spotting\TitleIndex.lua
 Spotting\Log.lua
 Spotting\Achievements.lua
+# Each flavour's achievement list, straight after the engine.
+Flavors\Retail\Achievements.lua [AllowLoadGameType standard]
+Flavors\Forever\Achievements.lua [AllowLoadGameType camelot]
 Spotting\Capture.lua
 Spotting\LogbookUI.lua
 

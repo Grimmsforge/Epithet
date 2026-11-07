@@ -66,7 +66,7 @@ local DB_DEFAULTS = {
 -- Print helper
 -- ---------------------------------------------------------------------------
 local function Print(msg)
-    print("|cffe8c873Epithet:|r " .. msg)
+    print(T.Wrap(T.col.gold, "Epithet:") .. " " .. msg)
 end
 ns.Print = Print
 
@@ -484,13 +484,13 @@ local function EnsureDebugModal()
     titleSep:SetHeight(1)
     titleSep:SetPoint("TOPLEFT", modal, "TOPLEFT", 1, -33)
     titleSep:SetPoint("TOPRIGHT", modal, "TOPRIGHT", -1, -33)
-    titleSep:SetColorTexture(0.72, 0.60, 0.36, 0.30)
+    titleSep:SetColorTexture(T.RGBA(T.col.line, 0.30))
 
     local topInset = modal:CreateTexture(nil, "BORDER")
     topInset:SetHeight(1)
     topInset:SetPoint("TOPLEFT", modal, "TOPLEFT", 2, -2)
     topInset:SetPoint("TOPRIGHT", modal, "TOPRIGHT", -2, -2)
-    topInset:SetColorTexture(0.72, 0.60, 0.36, 0.18)
+    topInset:SetColorTexture(T.RGBA(T.col.line, 0.18))
 
     local heading = modal:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     heading:SetPoint("LEFT", titleBar, "LEFT", 12, 0)
@@ -667,6 +667,10 @@ end
 -- ---------------------------------------------------------------------------
 function Epithet:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("EpithetDB", DB_DEFAULTS, true)
+
+    -- Every file has loaded, including any flavour theme overrides; from here
+    -- on frames get built, so a later Theme.Apply would only half-apply.
+    T.Seal()
 
     -- Apply the saved language preference before any UI is built. Modules capture
     -- `local L = ns.L` at load, but the proxy resolves lazily, so switching the
@@ -946,7 +950,9 @@ function Epithet:HandleSlash(input)
         return
     elseif cmd == "whatsnew" then
         if ns.WhatsNew and ns.WhatsNew.Show then
-            ns.WhatsNew:Show(ns.WhatsNew:GetCurrentVersion())
+            -- The current version's notes, or the newest there are: a release
+            -- does not have to have its own.
+            ns.WhatsNew:Show(ns.WhatsNew:GetLatestContentVersion())
         end
         return
     end
@@ -969,7 +975,7 @@ function Epithet:SetupMinimapButton()
     local launcher = LDB:NewDataObject("Epithet", {
         type = "launcher",
         text = "Epithet",
-        icon = "Interface\\AddOns\\Epithet\\icons\\logo\\epithet-wax-seal-red-minimap-32",
+        icon = T.tex.logoSealMinimap,
         OnClick = function(_, button)
             if button == "LeftButton" then
                 if ns.MainFrame then
