@@ -23,6 +23,7 @@ externals:
 ignore:
   - scripts
   - dist
+  - docs
   - tools
   - icons/unused
   - .gitignore
